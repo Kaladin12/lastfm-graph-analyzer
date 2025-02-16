@@ -1,5 +1,6 @@
 package kaladin.zwolf.projects.lastfm.graph.analyzer.adapters.out;
 
+import kaladin.zwolf.projects.lastfm.graph.analyzer.domain.LastfmSessionTokenResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -27,7 +28,7 @@ public class LastFmApiAdapter {
         this.lastfmRestClient = lastfmRestClient;
     }
 
-    public ResponseEntity<String> getWebServiceSession(String token) throws NoSuchAlgorithmException {
+    public ResponseEntity<LastfmSessionTokenResponse> getWebServiceSession(String token) throws NoSuchAlgorithmException {
         StringBuilder sb = new StringBuilder();
         final String method = "auth.getSession";
         String md5Signature = getApiSignature(
@@ -45,6 +46,17 @@ public class LastFmApiAdapter {
                         .queryParam("token", token)
                         .queryParam("api_key", lastfmApiKey)
                         .queryParam("api_sig", md5Signature)
+                        .build())
+                .retrieve().toEntity(LastfmSessionTokenResponse.class);
+    }
+
+    public ResponseEntity<String> getArtistInfo(String name) {
+        return lastfmRestClient.post()
+                .uri(uriBuilder -> uriBuilder
+                        .queryParam("method", "artist.getInfo")
+                        .queryParam("artist", name)
+                        .queryParam("api_key", lastfmApiKey)
+                        .queryParam("format", "json")
                         .build())
                 .retrieve().toEntity(String.class);
     }

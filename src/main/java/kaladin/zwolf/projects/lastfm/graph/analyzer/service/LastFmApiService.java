@@ -6,6 +6,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.security.NoSuchAlgorithmException;
+import java.util.Objects;
 
 @Service
 public class LastFmApiService {
@@ -19,10 +20,15 @@ public class LastFmApiService {
 
     public String getSessionKey(String token) {
         try {
-            return lastFmApiAdapter.getWebServiceSession(token).getBody();
+            return Objects.requireNonNull(lastFmApiAdapter.getWebServiceSession(token).getBody())
+                    .getSession().getKey();
         } catch (NoSuchAlgorithmException e) {
             log.error("Unable to retrieve session key due to error: {}", e.getMessage());
         }
         return null;
+    }
+
+    public String getArtistInfo(String artistName) {
+        return lastFmApiAdapter.getArtistInfo(artistName).getBody();
     }
 }

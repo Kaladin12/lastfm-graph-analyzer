@@ -16,7 +16,7 @@ public class SecurityConfiguration {
         http
                 .authorizeHttpRequests((requests) -> requests
                         .requestMatchers("/api/*").hasRole("AUTH_USER")
-                        .requestMatchers("/api/v1/lastfm/callback").permitAll()
+                        .requestMatchers("/api/v1/lastfm/callback?*").permitAll()
                         .anyRequest().authenticated())
                 .headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::disable))
                 .csrf(AbstractHttpConfigurer::disable)
