@@ -1,5 +1,6 @@
 package kaladin.zwolf.projects.lastfm.graph.analyzer.adapters.in;
 
+import kaladin.zwolf.projects.lastfm.graph.analyzer.domain.LastfmArtistInfo;
 import kaladin.zwolf.projects.lastfm.graph.analyzer.service.LastFmApiService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,5 +23,11 @@ public class LastfmAdapter {
         log.info("RECEIVED TOKEN: {}", token);
         String sessionKey = lastFmApiService.getSessionKey(token);
         log.info("RETRIEVED SESSION KEY: {}", sessionKey);
+    }
+
+    @GetMapping("/artist/{id}")
+    public void getArtist(@PathVariable String id) {
+        LastfmArtistInfo artist = lastFmApiService.getArtistInfo(id);
+        log.info("ARTIST INFO: {}" , artist);
     }
 }

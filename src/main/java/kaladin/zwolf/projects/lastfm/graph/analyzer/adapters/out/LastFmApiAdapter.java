@@ -1,5 +1,6 @@
 package kaladin.zwolf.projects.lastfm.graph.analyzer.adapters.out;
 
+import kaladin.zwolf.projects.lastfm.graph.analyzer.domain.LastfmArtistInfo;
 import kaladin.zwolf.projects.lastfm.graph.analyzer.domain.LastfmSessionTokenResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,7 +51,7 @@ public class LastFmApiAdapter {
                 .retrieve().toEntity(LastfmSessionTokenResponse.class);
     }
 
-    public ResponseEntity<String> getArtistInfo(String name) {
+    public ResponseEntity<LastfmArtistInfo> getArtistInfo(String name) {
         return lastfmRestClient.post()
                 .uri(uriBuilder -> uriBuilder
                         .queryParam("method", "artist.getInfo")
@@ -58,7 +59,7 @@ public class LastFmApiAdapter {
                         .queryParam("api_key", lastfmApiKey)
                         .queryParam("format", "json")
                         .build())
-                .retrieve().toEntity(String.class);
+                .retrieve().toEntity(LastfmArtistInfo.class);
     }
 
     private String getApiSignature(String base) throws NoSuchAlgorithmException {
