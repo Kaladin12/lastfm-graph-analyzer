@@ -41,8 +41,8 @@ public class LastFmApiService {
 
     public LastfmArtistInfo getArtistInfo(String artistName) {
         LastfmArtistInfo artistInfo =  lastFmApiAdapter.getArtistInfo(artistName).getBody();
-        var tags = artistInfo.getArtist().getTags().getTag();
-        artistInfo.getArtist().getTags().setTag(tags.subList(0, Math.min(3, tags.size())));
+        setTags(artistInfo);
+
         if (artistInfo.getArtist().getMbid() == null) {
             artistInfo.getArtist().setMbid(UUID.nameUUIDFromBytes(artistInfo.getArtist().getName().getBytes()).toString());
             log.info("Artist {} had null Mbid, setting it to {}", artistName, artistInfo.getArtist().getMbid());
@@ -72,7 +72,6 @@ public class LastFmApiService {
             // Converts the threads list into an array, using CompletableFuture as allocation size
             CompletableFuture.allOf(artistLibraryThreads.toArray(new CompletableFuture[0])).join();
 
-            List<CompletableFuture<LastfmArtistInfo>> artistInfoThreads = new ArrayList<>();
             Stream<LastfmGetLibraryArtistsResponse. Artist> fetchedPagesArtists = artistLibraryThreads.stream()
                     .flatMap(fetchedPageData -> {
                         try {
@@ -81,11 +80,8 @@ public class LastFmApiService {
                             throw new RuntimeException(ex);
                         }});
             handleFetchedPageData(fetchedPagesArtists);
-            // TODO: Do something in mongo later
-            log.info("PAGES COMPLETED");
+            log.info("{}/{} PAGES COMPLETED", page-1, totalPages);
         }
-
-        log.info("Total pages: {}", totalPages);
     }
 
     private void handleFetchedPageData(Stream<LastfmGetLibraryArtistsResponse.Artist> fetchedPageArtists) {
@@ -108,5 +104,10 @@ public class LastFmApiService {
         return CompletableFuture.completedFuture(
                 lastFmApiAdapter.getArtistInfo(name).getBody()
         );
+    }
+
+    private void setTags(LastfmArtistInfo artistInfo) {
+        var tags = artistInfo.getArtist().getTags().getTag();
+        artistInfo.getArtist().getTags().setTag(tags.subList(0, Math.min(3, tags.size())));
     }
 }
