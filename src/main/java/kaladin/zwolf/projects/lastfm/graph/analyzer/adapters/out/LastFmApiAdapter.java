@@ -1,6 +1,7 @@
 package kaladin.zwolf.projects.lastfm.graph.analyzer.adapters.out;
 
 import kaladin.zwolf.projects.lastfm.graph.analyzer.domain.LastfmArtistInfo;
+import kaladin.zwolf.projects.lastfm.graph.analyzer.domain.LastfmGetLibraryArtistsResponse;
 import kaladin.zwolf.projects.lastfm.graph.analyzer.domain.LastfmSessionTokenResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -9,6 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.util.DigestUtils;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.util.UriBuilder;
 
 import java.nio.charset.StandardCharsets;
 import java.security.NoSuchAlgorithmException;
@@ -62,9 +64,29 @@ public class LastFmApiAdapter {
                 .retrieve().toEntity(LastfmArtistInfo.class);
     }
 
-    private String getApiSignature(String base) throws NoSuchAlgorithmException {
-        return DigestUtils.md5DigestAsHex(base.getBytes(StandardCharsets.UTF_8)).toUpperCase();
+    public ResponseEntity<LastfmGetLibraryArtistsResponse> getLibraryArtists(String username, String page) {
+        return lastfmRestClient.post()
+                .uri(uriBuilder -> {
+                    uriBuilder = getLibraryArtistsUriBuilder(username, uriBuilder);
+                    if (page != null) {
+                        return uriBuilder.queryParam("page", page).build();
+                    }
+                    return uriBuilder.build();
+                })
+                .retrieve().toEntity(LastfmGetLibraryArtistsResponse.class);
+    }
 
+    private String getApiSignature(String base) {
+        return DigestUtils.md5DigestAsHex(base.getBytes(StandardCharsets.UTF_8)).toUpperCase();
+    }
+
+    private UriBuilder getLibraryArtistsUriBuilder(String username, UriBuilder uriBuilder) {
+        return uriBuilder
+                .queryParam("method","library.getArtists")
+                .queryParam("user", username)
+                .queryParam("limit", 100)
+                .queryParam("api_key", lastfmApiKey)
+                .queryParam("format", "json");
     }
 
 }

@@ -28,6 +28,13 @@ public class LastfmAdapter {
     @GetMapping("/artist/{id}")
     public void getArtist(@PathVariable String id) {
         LastfmArtistInfo artist = lastFmApiService.getArtistInfo(id);
-        log.info("ARTIST INFO: {}" , artist);
+        if (artist != null) {
+            log.info("RETRIEVED ARTIST: {}", artist);
+        }
+    }
+
+    @GetMapping("/library/{username}")
+    public void getLibrary(@PathVariable String username) {
+        lastFmApiService.getLibraryArtists(username);
     }
 }
