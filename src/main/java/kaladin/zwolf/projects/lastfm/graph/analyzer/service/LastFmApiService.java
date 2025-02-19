@@ -45,7 +45,8 @@ public class LastFmApiService {
 
     public LastfmArtistInfo getArtistInfo(String artistName) {
         LastfmArtistInfo artistInfo = lastFmApiAdapter.getArtistInfo(artistName).getBody();
-        return artistRepositoryService.saveArtistInfoIfNotExist(artistInfo) ? artistInfo : null;
+        artistRepositoryService.saveArtistInfoIfNotExist(artistInfo);
+        return artistInfo;
     }
 
     public void getLibraryArtists(String username) {

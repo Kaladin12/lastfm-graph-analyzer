@@ -25,12 +25,13 @@ public class ArtistRepositoryService {
 
     public boolean saveArtistInfoIfNotExist(LastfmArtistInfo artistInfo) {
         String mbid = artistInfo.getArtist().getMbid();
+        String name = artistInfo.getArtist().getName();
         if (mbid == null) {
             artistInfo.getArtist().setMbid(
-                    UUID.nameUUIDFromBytes(artistInfo.getArtist().getName().getBytes()).toString()
+                    UUID.nameUUIDFromBytes(name.getBytes()).toString()
             );
             mbid = artistInfo.getArtist().getMbid();
-            log.info("Artist {} had null Mbid, setting it to {}", artistInfo.getArtist().getName(), mbid);
+            log.info("Artist {} had null Mbid, setting it to {}", name, mbid);
         }
         var exists = findArtistByMbid(artistInfo.getArtist().getMbid());
         if (exists.isEmpty()) {
