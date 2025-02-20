@@ -3,14 +3,12 @@ package kaladin.zwolf.projects.lastfm.graph.analyzer.domain;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.Data;
 import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.util.List;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
-@Document("artist_info")
-public class LastfmArtistInfo {
+public class LastfmArtistInfoResponse {
     private Artist artist;
 
     @Data

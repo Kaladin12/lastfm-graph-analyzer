@@ -1,6 +1,6 @@
 package kaladin.zwolf.projects.lastfm.graph.analyzer.adapters.out;
 
-import kaladin.zwolf.projects.lastfm.graph.analyzer.domain.LastfmArtistInfo;
+import kaladin.zwolf.projects.lastfm.graph.analyzer.domain.LastfmArtistInfoResponse;
 import kaladin.zwolf.projects.lastfm.graph.analyzer.domain.LastfmGetLibraryArtistsResponse;
 import kaladin.zwolf.projects.lastfm.graph.analyzer.domain.LastfmSessionTokenResponse;
 import org.slf4j.Logger;
@@ -53,15 +53,19 @@ public class LastFmApiAdapter {
                 .retrieve().toEntity(LastfmSessionTokenResponse.class);
     }
 
-    public ResponseEntity<LastfmArtistInfo> getArtistInfo(String name) {
+    public ResponseEntity<LastfmArtistInfoResponse> getArtistInfo(String name, String mbid) {
         return lastfmRestClient.post()
-                .uri(uriBuilder -> uriBuilder
-                        .queryParam("method", "artist.getInfo")
-                        .queryParam("artist", name)
-                        .queryParam("api_key", lastfmApiKey)
-                        .queryParam("format", "json")
-                        .build())
-                .retrieve().toEntity(LastfmArtistInfo.class);
+                .uri(uriBuilder -> {
+                    uriBuilder = uriBuilder
+                            .queryParam("method", "artist.getInfo")
+                            .queryParam("api_key", lastfmApiKey)
+                            .queryParam("format", "json");
+                    if (mbid != null) {
+                       return uriBuilder.queryParam("mbid", mbid).build();
+                    }
+                    return uriBuilder.queryParam("artist", name).build();
+                })
+                .retrieve().toEntity(LastfmArtistInfoResponse.class);
     }
 
     public ResponseEntity<LastfmGetLibraryArtistsResponse> getLibraryArtists(String username, String page) {

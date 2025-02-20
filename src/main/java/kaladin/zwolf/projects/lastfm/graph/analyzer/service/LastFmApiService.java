@@ -2,8 +2,10 @@ package kaladin.zwolf.projects.lastfm.graph.analyzer.service;
 
 import kaladin.zwolf.projects.lastfm.graph.analyzer.Util.ChunkIterator;
 import kaladin.zwolf.projects.lastfm.graph.analyzer.adapters.out.LastFmApiAdapter;
-import kaladin.zwolf.projects.lastfm.graph.analyzer.domain.LastfmArtistInfo;
+import kaladin.zwolf.projects.lastfm.graph.analyzer.domain.LastfmArtist;
+import kaladin.zwolf.projects.lastfm.graph.analyzer.domain.LastfmArtistInfoResponse;
 import kaladin.zwolf.projects.lastfm.graph.analyzer.domain.LastfmGetLibraryArtistsResponse;
+import kaladin.zwolf.projects.lastfm.graph.analyzer.service.mapper.LastfmArtistMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -43,16 +45,17 @@ public class LastFmApiService {
         return null;
     }
 
-    public LastfmArtistInfo getArtistInfo(String artistName) {
-        LastfmArtistInfo artistInfo = lastFmApiAdapter.getArtistInfo(artistName).getBody();
-        artistRepositoryService.saveArtistInfoIfNotExist(artistInfo);
-        return artistInfo;
+    public LastfmArtist getArtistInfo(String name) {
+        LastfmArtistInfoResponse artistInfo = lastFmApiAdapter.getArtistInfo(name, null).getBody();
+        LastfmArtist artist = LastfmArtistMapper.fromArtistInfoToEntity(artistInfo);
+        artistRepositoryService.saveArtistInfoIfNotExist(artist);
+        return artist;
     }
 
     public void getLibraryArtists(String username) {
         LastfmGetLibraryArtistsResponse response = lastFmApiAdapter.getLibraryArtists(username, null).getBody();
         handleFetchedPageData(response.getArtists().getArtist().stream());
-        int totalPages = 2; //Integer.parseInt(response.getArtists().getAttributes().getTotalPages());
+        int totalPages = 20; //Integer.parseInt(response.getArtists().getAttributes().getTotalPages());
         int page = Integer.parseInt(response.getArtists().getAttributes().getPage()) + 1;
 
         while (page <= totalPages) {
@@ -77,11 +80,12 @@ public class LastFmApiService {
 
         stream.flatMap(this::artistInfoStream)
                 .filter(Objects::nonNull)
-                .forEach(artistInfo -> {
-                    artistRepositoryService.saveArtistInfoIfNotExist(artistInfo);
-                    log.info("ARTIST: {}, PLAYCOUNT: {}",
-                            artistInfo.getArtist().getName(),
-                            artistInfo.getArtist().getStats().getPlaycount());
+                .map(LastfmArtistMapper::fromArtistInfoToEntity)
+                .forEach(artist -> {
+                    artistRepositoryService.saveArtistInfoIfNotExist(artist);
+                    log.debug("ARTIST: {}, PLAYCOUNT: {}",
+                            artist.getName(),
+                            artist.getStats().getPlaycount());
                 });
     }
 
@@ -102,18 +106,25 @@ public class LastFmApiService {
     }
 
     @Async
-    protected CompletableFuture<LastfmArtistInfo> getArtistInfoAsync(String name) {
-        return CompletableFuture.completedFuture(
-                lastFmApiAdapter.getArtistInfo(name).getBody()
-        );
+    protected CompletableFuture<LastfmArtistInfoResponse> getArtistInfoAsync(String name, String mbid) {
+        var i = CompletableFuture.completedFuture(lastFmApiAdapter.getArtistInfo(name, mbid).getBody());
+        try {
+            if (i.get().getArtist() == null) {
+                return CompletableFuture.completedFuture(lastFmApiAdapter.getArtistInfo(name, null).getBody());
+            }
+        } catch (Exception e) {
+            return CompletableFuture.completedFuture(null);
+        }
+        return i;
     }
 
 
-    private Stream<LastfmArtistInfo> artistInfoStream(List<LastfmGetLibraryArtistsResponse. Artist> artists) {
-        List<CompletableFuture<LastfmArtistInfo>> threads = new ArrayList<>();
-        log.info("SIZE: {}", artists.size());
+    private Stream<LastfmArtistInfoResponse> artistInfoStream(List<LastfmGetLibraryArtistsResponse. Artist> artists)  {
+        List<CompletableFuture<LastfmArtistInfoResponse>> threads = new ArrayList<>();
+        log.debug("SIZE: {}", artists.size());
         for (int thread = 0; thread < THREAD_COUNT && thread < artists.size(); thread++) {
-            threads.add(getArtistInfoAsync(artists.get(thread).getName()));
+            threads.add(getArtistInfoAsync(artists.get(thread).getName(),
+                    artists.get(thread).getMbid().isBlank() ? null : artists.get(thread).getMbid()));
         }
         CompletableFuture.allOf(threads.toArray(new CompletableFuture[0])).join();
         return threads.stream().flatMap(fetchedArtist -> {
