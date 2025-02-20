@@ -107,15 +107,15 @@ public class LastFmApiService {
 
     @Async
     protected CompletableFuture<LastfmArtistInfoResponse> getArtistInfoAsync(String name, String mbid) {
-        var i = CompletableFuture.completedFuture(lastFmApiAdapter.getArtistInfo(name, mbid).getBody());
+        var artistInfoRes = CompletableFuture.completedFuture(lastFmApiAdapter.getArtistInfo(name, mbid).getBody());
         try {
-            if (i.get().getArtist() == null) {
+            if (artistInfoRes.get().getArtist() == null) {
                 return CompletableFuture.completedFuture(lastFmApiAdapter.getArtistInfo(name, null).getBody());
             }
         } catch (Exception e) {
             return CompletableFuture.completedFuture(null);
         }
-        return i;
+        return artistInfoRes;
     }
 
 
