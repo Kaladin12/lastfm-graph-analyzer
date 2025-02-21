@@ -1,7 +1,9 @@
 package kaladin.zwolf.projects.lastfm.graph.analyzer.adapters.in;
 
 import kaladin.zwolf.projects.lastfm.graph.analyzer.domain.entity.LastfmArtist;
+import kaladin.zwolf.projects.lastfm.graph.analyzer.domain.response.LastfmTopTracksResponse;
 import kaladin.zwolf.projects.lastfm.graph.analyzer.service.LastFmArtistApiService;
+import kaladin.zwolf.projects.lastfm.graph.analyzer.service.LastFmTrackApiService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.annotation.*;
@@ -13,9 +15,11 @@ public class LastfmAdapter {
     private final Logger log = LoggerFactory.getLogger(LastfmAdapter.class);
 
     private LastFmArtistApiService lastFmArtistApiService;
+    private LastFmTrackApiService lastFmTrackApiService;
 
-    public LastfmAdapter(LastFmArtistApiService lastFmArtistApiService) {
+    public LastfmAdapter(LastFmArtistApiService lastFmArtistApiService, LastFmTrackApiService lastFmTrackApiService) {
         this.lastFmArtistApiService = lastFmArtistApiService;
+        this.lastFmTrackApiService = lastFmTrackApiService;
     }
 
     @GetMapping("/callback")
@@ -31,6 +35,11 @@ public class LastfmAdapter {
         if (artist != null) {
             log.info("RETRIEVED ARTIST: {}", artist);
         }
+    }
+
+    @GetMapping("/track/top/{username}")
+    public void getTrackTop(@PathVariable String username, @RequestParam("period") String period) {
+        lastFmTrackApiService.getTopTracks(username, period);
     }
 
     @GetMapping("/library/{username}")

@@ -5,7 +5,7 @@ import kaladin.zwolf.projects.lastfm.graph.analyzer.adapters.out.LastFmArtistApi
 import kaladin.zwolf.projects.lastfm.graph.analyzer.domain.entity.LastfmArtist;
 import kaladin.zwolf.projects.lastfm.graph.analyzer.domain.response.LastfmArtistInfoResponse;
 import kaladin.zwolf.projects.lastfm.graph.analyzer.domain.response.LastfmGetLibraryArtistsResponse;
-import kaladin.zwolf.projects.lastfm.graph.analyzer.service.mapper.LastfmArtistMapper;
+import kaladin.zwolf.projects.lastfm.graph.analyzer.service.mapper.LastfmMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -47,7 +47,7 @@ public class LastFmArtistApiService {
 
     public LastfmArtist getArtistInfo(String name) {
         LastfmArtistInfoResponse artistInfo = lastFmArtistApiAdapter.getArtistInfo(name, null).getBody();
-        LastfmArtist artist = LastfmArtistMapper.fromArtistInfoToEntity(artistInfo);
+        LastfmArtist artist = LastfmMapper.fromArtistInfoToEntity(artistInfo);
         musicRepositoryService.saveArtistInfoIfNotExist(artist);
         return artist;
     }
@@ -76,11 +76,11 @@ public class LastFmArtistApiService {
     }
 
     private void handleFetchedPageData(Stream<LastfmGetLibraryArtistsResponse.Artist> fetchedPageArtists) {
-        Stream<List<LastfmGetLibraryArtistsResponse.Artist>> stream = getStreamAsChunks(fetchedPageArtists, THREAD_COUNT);
+        Stream<List<LastfmGetLibraryArtistsResponse.Artist>> stream = new ChunkIterator<>(fetchedPageArtists.iterator(), THREAD_COUNT).stream();
 
         stream.flatMap(this::artistInfoStream)
                 .filter(Objects::nonNull)
-                .map(LastfmArtistMapper::fromArtistInfoToEntity)
+                .map(LastfmMapper::fromArtistInfoToEntity)
                 .forEach(artist -> {
                     musicRepositoryService.saveArtistInfoIfNotExist(artist);
                     log.debug("ARTIST: {}, PLAYCOUNT: {}",

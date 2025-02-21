@@ -8,8 +8,9 @@ import lombok.Data;
 import java.util.List;
 
 @Data
+@Builder
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class LastfmTrackResponse {
+public class LastfmTopTracksResponse {
     @JsonProperty("toptracks")
     private TopTracks topTracks;
 
@@ -17,6 +18,7 @@ public class LastfmTrackResponse {
     @Builder
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class TopTracks {
+        @JsonProperty("track")
         List<Track> tracks;
         @JsonProperty("@attr")
         private LastfmGetLibraryArtistsResponse.PageAttributes pageAttributes;

@@ -1,8 +1,8 @@
 package kaladin.zwolf.projects.lastfm.graph.analyzer.util;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 public class ChunkIterator<T> implements Iterator<List<T>> {
     private final Iterator<T> iterator;
@@ -25,5 +25,10 @@ public class ChunkIterator<T> implements Iterator<List<T>> {
             chunk.add(iterator.next());
         }
         return chunk;
+    }
+
+    public Stream<List<T>> stream() {
+        return StreamSupport.stream(Spliterators
+                .spliteratorUnknownSize(this, Spliterator.ORDERED), false);
     }
 }

@@ -15,6 +15,8 @@ public class LastfmTrack {
     private int playcount;
     private int rank; // perhaps should be a long, but we'll see
     private Album album;
+    private List<LastfmArtistInfoResponse.Tag> tags;
+    private boolean generatedMbid = false;
 
     @Data
     @Builder
