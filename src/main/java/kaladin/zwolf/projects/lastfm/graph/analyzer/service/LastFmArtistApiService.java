@@ -1,7 +1,7 @@
 package kaladin.zwolf.projects.lastfm.graph.analyzer.service;
 
-import kaladin.zwolf.projects.lastfm.graph.analyzer.Util.ChunkIterator;
-import kaladin.zwolf.projects.lastfm.graph.analyzer.adapters.out.LastFmApiAdapter;
+import kaladin.zwolf.projects.lastfm.graph.analyzer.util.ChunkIterator;
+import kaladin.zwolf.projects.lastfm.graph.analyzer.adapters.out.LastFmArtistApiAdapter;
 import kaladin.zwolf.projects.lastfm.graph.analyzer.domain.entity.LastfmArtist;
 import kaladin.zwolf.projects.lastfm.graph.analyzer.domain.response.LastfmArtistInfoResponse;
 import kaladin.zwolf.projects.lastfm.graph.analyzer.domain.response.LastfmGetLibraryArtistsResponse;
@@ -23,21 +23,21 @@ import java.util.stream.StreamSupport;
 public class LastFmArtistApiService {
     private final Logger log = LoggerFactory.getLogger(LastFmArtistApiService.class);
 
-    private final LastFmApiAdapter lastFmApiAdapter;
+    private final LastFmArtistApiAdapter lastFmArtistApiAdapter;
     private final MusicRepositoryService musicRepositoryService;
 
     @Value("${thread.count}")
     private int THREAD_COUNT;
 
-    public LastFmArtistApiService(LastFmApiAdapter lastFmApiAdapter,
+    public LastFmArtistApiService(LastFmArtistApiAdapter lastFmArtistApiAdapter,
                                   MusicRepositoryService musicRepositoryService) {
-        this.lastFmApiAdapter = lastFmApiAdapter;
+        this.lastFmArtistApiAdapter = lastFmArtistApiAdapter;
         this.musicRepositoryService = musicRepositoryService;
     }
 
     public String getSessionKey(String token) {
         try {
-            return Objects.requireNonNull(lastFmApiAdapter.getWebServiceSession(token).getBody())
+            return Objects.requireNonNull(lastFmArtistApiAdapter.getWebServiceSession(token).getBody())
                     .getSession().getKey();
         } catch (NoSuchAlgorithmException e) {
             log.error("Unable to retrieve session key due to error: {}", e.getMessage());
@@ -46,14 +46,14 @@ public class LastFmArtistApiService {
     }
 
     public LastfmArtist getArtistInfo(String name) {
-        LastfmArtistInfoResponse artistInfo = lastFmApiAdapter.getArtistInfo(name, null).getBody();
+        LastfmArtistInfoResponse artistInfo = lastFmArtistApiAdapter.getArtistInfo(name, null).getBody();
         LastfmArtist artist = LastfmArtistMapper.fromArtistInfoToEntity(artistInfo);
         musicRepositoryService.saveArtistInfoIfNotExist(artist);
         return artist;
     }
 
     public void getLibraryArtists(String username) {
-        LastfmGetLibraryArtistsResponse response = lastFmApiAdapter.getLibraryArtists(username, null).getBody();
+        LastfmGetLibraryArtistsResponse response = lastFmArtistApiAdapter.getLibraryArtists(username, null).getBody();
         handleFetchedPageData(response.getArtists().getArtist().stream());
         int totalPages = 20; //Integer.parseInt(response.getArtists().getAttributes().getTotalPages());
         int page = Integer.parseInt(response.getArtists().getPageAttributes().getPage()) + 1;
@@ -92,7 +92,7 @@ public class LastFmArtistApiService {
     @Async
     protected CompletableFuture<LastfmGetLibraryArtistsResponse> getLibraryArtistAsync(String username, String page) {
         return CompletableFuture.completedFuture(
-                lastFmApiAdapter.getLibraryArtists(username, page).getBody()
+                lastFmArtistApiAdapter.getLibraryArtists(username, page).getBody()
         );
     }
 
@@ -107,10 +107,10 @@ public class LastFmArtistApiService {
 
     @Async
     protected CompletableFuture<LastfmArtistInfoResponse> getArtistInfoAsync(String name, String mbid) {
-        var artistInfoRes = CompletableFuture.completedFuture(lastFmApiAdapter.getArtistInfo(name, mbid).getBody());
+        var artistInfoRes = CompletableFuture.completedFuture(lastFmArtistApiAdapter.getArtistInfo(name, mbid).getBody());
         try {
             if (artistInfoRes.get().getArtist() == null) {
-                return CompletableFuture.completedFuture(lastFmApiAdapter.getArtistInfo(name, null).getBody());
+                return CompletableFuture.completedFuture(lastFmArtistApiAdapter.getArtistInfo(name, null).getBody());
             }
         } catch (Exception e) {
             return CompletableFuture.completedFuture(null);

@@ -3,9 +3,8 @@ package kaladin.zwolf.projects.lastfm.graph.analyzer.adapters.out;
 import kaladin.zwolf.projects.lastfm.graph.analyzer.domain.response.LastfmArtistInfoResponse;
 import kaladin.zwolf.projects.lastfm.graph.analyzer.domain.response.LastfmGetLibraryArtistsResponse;
 import kaladin.zwolf.projects.lastfm.graph.analyzer.domain.response.LastfmSessionTokenResponse;
-import org.slf4j.Logger;
+import kaladin.zwolf.projects.lastfm.graph.analyzer.ports.out.LastFmApiAdapter;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.util.DigestUtils;
@@ -16,18 +15,10 @@ import java.nio.charset.StandardCharsets;
 import java.security.NoSuchAlgorithmException;
 
 @Component
-public class LastFmApiAdapter {
-    private final Logger log = LoggerFactory.getLogger(LastFmApiAdapter.class);
+public class LastFmArtistApiAdapter extends LastFmApiAdapter {
 
-    private RestClient lastfmRestClient;
-
-    @Value("${lastfm_api_key}")
-    private String lastfmApiKey;
-
-    @Value("${lastfm_api_secret}")
-    private String lastfmApiSecret;
-
-    public LastFmApiAdapter(RestClient lastfmRestClient) {
+    public LastFmArtistApiAdapter(RestClient lastfmRestClient) {
+        super(LoggerFactory.getLogger(LastFmArtistApiAdapter.class));
         this.lastfmRestClient = lastfmRestClient;
     }
 

@@ -1,4 +1,4 @@
-package kaladin.zwolf.projects.lastfm.graph.analyzer.Util;
+package kaladin.zwolf.projects.lastfm.graph.analyzer.util;
 
 import java.util.ArrayList;
 import java.util.Iterator;
