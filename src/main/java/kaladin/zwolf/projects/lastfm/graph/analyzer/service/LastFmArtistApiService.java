@@ -20,8 +20,8 @@ import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 @Service
-public class LastFmApiService {
-    private final Logger log = LoggerFactory.getLogger(LastFmApiService.class);
+public class LastFmArtistApiService {
+    private final Logger log = LoggerFactory.getLogger(LastFmArtistApiService.class);
 
     private final LastFmApiAdapter lastFmApiAdapter;
     private final ArtistRepositoryService artistRepositoryService;
@@ -29,8 +29,8 @@ public class LastFmApiService {
     @Value("${thread.count}")
     private int THREAD_COUNT;
 
-    public LastFmApiService(LastFmApiAdapter lastFmApiAdapter,
-                            ArtistRepositoryService artistRepositoryService) {
+    public LastFmArtistApiService(LastFmApiAdapter lastFmApiAdapter,
+                                  ArtistRepositoryService artistRepositoryService) {
         this.lastFmApiAdapter = lastFmApiAdapter;
         this.artistRepositoryService = artistRepositoryService;
     }

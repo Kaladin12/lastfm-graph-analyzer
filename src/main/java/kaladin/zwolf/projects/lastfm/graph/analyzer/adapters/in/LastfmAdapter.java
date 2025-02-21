@@ -1,7 +1,7 @@
 package kaladin.zwolf.projects.lastfm.graph.analyzer.adapters.in;
 
 import kaladin.zwolf.projects.lastfm.graph.analyzer.domain.LastfmArtist;
-import kaladin.zwolf.projects.lastfm.graph.analyzer.service.LastFmApiService;
+import kaladin.zwolf.projects.lastfm.graph.analyzer.service.LastFmArtistApiService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.annotation.*;
@@ -12,22 +12,22 @@ import org.springframework.web.bind.annotation.*;
 public class LastfmAdapter {
     private final Logger log = LoggerFactory.getLogger(LastfmAdapter.class);
 
-    private LastFmApiService lastFmApiService;
+    private LastFmArtistApiService lastFmArtistApiService;
 
-    public LastfmAdapter(LastFmApiService lastFmApiService) {
-        this.lastFmApiService = lastFmApiService;
+    public LastfmAdapter(LastFmArtistApiService lastFmArtistApiService) {
+        this.lastFmArtistApiService = lastFmArtistApiService;
     }
 
     @GetMapping("/callback")
     public void handleCallback(@RequestParam("token") String token) {
         log.info("RECEIVED TOKEN: {}", token);
-        String sessionKey = lastFmApiService.getSessionKey(token);
+        String sessionKey = lastFmArtistApiService.getSessionKey(token);
         log.info("RETRIEVED SESSION KEY: {}", sessionKey);
     }
 
     @GetMapping("/artist/{id}")
     public void getArtist(@PathVariable String id) {
-        LastfmArtist artist = lastFmApiService.getArtistInfo(id);
+        LastfmArtist artist = lastFmArtistApiService.getArtistInfo(id);
         if (artist != null) {
             log.info("RETRIEVED ARTIST: {}", artist);
         }
@@ -35,6 +35,6 @@ public class LastfmAdapter {
 
     @GetMapping("/library/{username}")
     public void getLibrary(@PathVariable String username) {
-        lastFmApiService.getLibraryArtists(username);
+        lastFmArtistApiService.getLibraryArtists(username);
     }
 }
