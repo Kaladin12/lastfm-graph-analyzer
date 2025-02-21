@@ -32,7 +32,9 @@ public class LastFmTrackApiService {
     @Value("${thread.count}")
     private int THREAD_COUNT;
 
-    public LastFmTrackApiService(LastFmArtistApiAdapter lastFmArtistApiAdapter, LastFmTrackApiAdapter lastFmTrackApiAdapter, MusicRepositoryService musicRepositoryService) {
+    public LastFmTrackApiService(LastFmArtistApiAdapter lastFmArtistApiAdapter,
+                                 LastFmTrackApiAdapter lastFmTrackApiAdapter,
+                                 MusicRepositoryService musicRepositoryService) {
         this.lastFmArtistApiAdapter = lastFmArtistApiAdapter;
         this.lastFmTrackApiAdapter = lastFmTrackApiAdapter;
         this.musicRepositoryService = musicRepositoryService;
@@ -71,28 +73,36 @@ public class LastFmTrackApiService {
                     tracks.get(threadId).getMbid(), tracks.get(threadId).getArtist().getName()));
         }
         CompletableFuture.allOf(threads.toArray(new CompletableFuture[0])).join();
+
         AtomicInteger index = new AtomicInteger(0);
-        return threads.stream().flatMap(fetchedTrackInfo -> {
-            try {
-                var info = fetchedTrackInfo.get();
-                int id = index.getAndIncrement();
-                if (info.getTrack() == null && !tracks.get(id).getMbid().isBlank()) {
-                    info = lastFmTrackApiAdapter.getTrackInfo(tracks.get(id).getName(),
-                            null, tracks.get(id).getArtist().getName()).getBody();
-                }
-                if (info.getTrack() != null) {
-                    return Stream.of(LastfmMapper.fromTrackInfoToEntity(info, tracks.get(id)));
-                }
-                return Stream.empty();
-            } catch (InterruptedException | ExecutionException ex) {
-                throw new RuntimeException(ex);
-            }
-        });
+
+        return threads.stream().flatMap(fetchedTrackInfo -> mapTrackInfoWithRetry(fetchedTrackInfo, tracks, index));
     }
 
     @Async
     protected CompletableFuture<LastfmTrackInfoResponse> getTrackInfoAsync(String track, String mbid, String artist) {
         return CompletableFuture.completedFuture(lastFmTrackApiAdapter.getTrackInfo(track, mbid, artist).getBody());
+    }
+
+    private Stream<LastfmTrack> mapTrackInfoWithRetry(
+            CompletableFuture<LastfmTrackInfoResponse> fetchedTrackInfo,
+            List<LastfmTopTracksResponse.Track> tracks,
+            AtomicInteger index) {
+        try {
+            LastfmTrackInfoResponse info = fetchedTrackInfo.get();
+            int id = index.getAndIncrement();
+            if (info.getTrack() == null && !tracks.get(id).getMbid().isBlank()) {
+                info = lastFmTrackApiAdapter.getTrackInfo(
+                        tracks.get(id).getName(), null, tracks.get(id).getArtist().getName()
+                ).getBody();
+            }
+            if (info.getTrack() != null) {
+                return Stream.of(LastfmMapper.fromTrackInfoToEntity(info, tracks.get(id)));
+            }
+            return Stream.empty();
+        } catch (InterruptedException | ExecutionException ex) {
+            throw new RuntimeException(ex);
+        }
     }
 
 }
