@@ -1,7 +1,7 @@
 package kaladin.zwolf.projects.lastfm.graph.analyzer.service;
 
-import kaladin.zwolf.projects.lastfm.graph.analyzer.domain.LastfmArtist;
-import kaladin.zwolf.projects.lastfm.graph.analyzer.ports.out.ArtistRepository;
+import kaladin.zwolf.projects.lastfm.graph.analyzer.domain.entity.LastfmArtist;
+import kaladin.zwolf.projects.lastfm.graph.analyzer.ports.out.MusicRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -10,17 +10,21 @@ import java.util.Optional;
 import java.util.UUID;
 
 @Service
-public class ArtistRepositoryService {
-    private final Logger log = LoggerFactory.getLogger(ArtistRepositoryService.class);
+public class MusicRepositoryService {
+    private final Logger log = LoggerFactory.getLogger(MusicRepositoryService.class);
 
-    private ArtistRepository artistRepository;
+    private MusicRepository musicRepository;
 
-    public ArtistRepositoryService(ArtistRepository artistRepository) {
-        this.artistRepository = artistRepository;
+    public MusicRepositoryService(MusicRepository musicRepository) {
+        this.musicRepository = musicRepository;
     }
 
     public Optional<LastfmArtist> findArtistByMbid(String mdid) {
-        return artistRepository.findLastfmArtistByMbid(mdid);
+        return musicRepository.findLastfmArtistByMbid(mdid);
+    }
+
+    public Optional<LastfmArtist> findArtistByName(String name) {
+        return musicRepository.findLastfmArtistByName(name);
     }
 
     public void saveArtistInfoIfNotExist(LastfmArtist artistInfo) {
@@ -36,7 +40,7 @@ public class ArtistRepositoryService {
         var exists = findArtistByMbid(artistInfo.getMbid());
         if (exists.isEmpty()) {
             setTags(artistInfo);
-            artistRepository.save(artistInfo);
+            musicRepository.save(artistInfo);
             log.debug("ARTIST {} SAVED", mbid);
             return;
         }

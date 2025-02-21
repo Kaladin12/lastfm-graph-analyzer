@@ -1,4 +1,4 @@
-package kaladin.zwolf.projects.lastfm.graph.analyzer.domain;
+package kaladin.zwolf.projects.lastfm.graph.analyzer.domain.response;
 
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlRootElement;

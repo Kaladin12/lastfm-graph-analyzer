@@ -1,7 +1,7 @@
 package kaladin.zwolf.projects.lastfm.graph.analyzer.service.mapper;
 
-import kaladin.zwolf.projects.lastfm.graph.analyzer.domain.LastfmArtist;
-import kaladin.zwolf.projects.lastfm.graph.analyzer.domain.LastfmArtistInfoResponse;
+import kaladin.zwolf.projects.lastfm.graph.analyzer.domain.entity.LastfmArtist;
+import kaladin.zwolf.projects.lastfm.graph.analyzer.domain.response.LastfmArtistInfoResponse;
 
 public class LastfmArtistMapper {
 

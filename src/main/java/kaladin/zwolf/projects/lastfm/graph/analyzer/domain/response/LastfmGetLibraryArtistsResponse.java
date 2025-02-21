@@ -1,4 +1,4 @@
-package kaladin.zwolf.projects.lastfm.graph.analyzer.domain;
+package kaladin.zwolf.projects.lastfm.graph.analyzer.domain.response;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -17,7 +17,7 @@ public class LastfmGetLibraryArtistsResponse {
     public static class Artists {
         private List<Artist> artist;
         @JsonProperty("@attr")
-        private Attributes attributes;
+        private PageAttributes pageAttributes;
     }
 
     @Data
@@ -30,7 +30,7 @@ public class LastfmGetLibraryArtistsResponse {
 
     @Data
     @JsonIgnoreProperties(ignoreUnknown = true)
-    public static class Attributes {
+    public static class PageAttributes {
         private String totalPages;
         private String page;
         private String perPage;

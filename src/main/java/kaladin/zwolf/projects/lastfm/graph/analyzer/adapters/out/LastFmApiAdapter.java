@@ -1,8 +1,8 @@
 package kaladin.zwolf.projects.lastfm.graph.analyzer.adapters.out;
 
-import kaladin.zwolf.projects.lastfm.graph.analyzer.domain.LastfmArtistInfoResponse;
-import kaladin.zwolf.projects.lastfm.graph.analyzer.domain.LastfmGetLibraryArtistsResponse;
-import kaladin.zwolf.projects.lastfm.graph.analyzer.domain.LastfmSessionTokenResponse;
+import kaladin.zwolf.projects.lastfm.graph.analyzer.domain.response.LastfmArtistInfoResponse;
+import kaladin.zwolf.projects.lastfm.graph.analyzer.domain.response.LastfmGetLibraryArtistsResponse;
+import kaladin.zwolf.projects.lastfm.graph.analyzer.domain.response.LastfmSessionTokenResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;

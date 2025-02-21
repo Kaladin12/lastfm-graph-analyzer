@@ -1,6 +1,6 @@
 package kaladin.zwolf.projects.lastfm.graph.analyzer.adapters.in;
 
-import kaladin.zwolf.projects.lastfm.graph.analyzer.domain.LastfmArtist;
+import kaladin.zwolf.projects.lastfm.graph.analyzer.domain.entity.LastfmArtist;
 import kaladin.zwolf.projects.lastfm.graph.analyzer.service.LastFmArtistApiService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

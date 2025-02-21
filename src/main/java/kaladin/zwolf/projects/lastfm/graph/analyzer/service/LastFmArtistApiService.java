@@ -2,9 +2,9 @@ package kaladin.zwolf.projects.lastfm.graph.analyzer.service;
 
 import kaladin.zwolf.projects.lastfm.graph.analyzer.Util.ChunkIterator;
 import kaladin.zwolf.projects.lastfm.graph.analyzer.adapters.out.LastFmApiAdapter;
-import kaladin.zwolf.projects.lastfm.graph.analyzer.domain.LastfmArtist;
-import kaladin.zwolf.projects.lastfm.graph.analyzer.domain.LastfmArtistInfoResponse;
-import kaladin.zwolf.projects.lastfm.graph.analyzer.domain.LastfmGetLibraryArtistsResponse;
+import kaladin.zwolf.projects.lastfm.graph.analyzer.domain.entity.LastfmArtist;
+import kaladin.zwolf.projects.lastfm.graph.analyzer.domain.response.LastfmArtistInfoResponse;
+import kaladin.zwolf.projects.lastfm.graph.analyzer.domain.response.LastfmGetLibraryArtistsResponse;
 import kaladin.zwolf.projects.lastfm.graph.analyzer.service.mapper.LastfmArtistMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,15 +24,15 @@ public class LastFmArtistApiService {
     private final Logger log = LoggerFactory.getLogger(LastFmArtistApiService.class);
 
     private final LastFmApiAdapter lastFmApiAdapter;
-    private final ArtistRepositoryService artistRepositoryService;
+    private final MusicRepositoryService musicRepositoryService;
 
     @Value("${thread.count}")
     private int THREAD_COUNT;
 
     public LastFmArtistApiService(LastFmApiAdapter lastFmApiAdapter,
-                                  ArtistRepositoryService artistRepositoryService) {
+                                  MusicRepositoryService musicRepositoryService) {
         this.lastFmApiAdapter = lastFmApiAdapter;
-        this.artistRepositoryService = artistRepositoryService;
+        this.musicRepositoryService = musicRepositoryService;
     }
 
     public String getSessionKey(String token) {
@@ -48,7 +48,7 @@ public class LastFmArtistApiService {
     public LastfmArtist getArtistInfo(String name) {
         LastfmArtistInfoResponse artistInfo = lastFmApiAdapter.getArtistInfo(name, null).getBody();
         LastfmArtist artist = LastfmArtistMapper.fromArtistInfoToEntity(artistInfo);
-        artistRepositoryService.saveArtistInfoIfNotExist(artist);
+        musicRepositoryService.saveArtistInfoIfNotExist(artist);
         return artist;
     }
 
@@ -56,7 +56,7 @@ public class LastFmArtistApiService {
         LastfmGetLibraryArtistsResponse response = lastFmApiAdapter.getLibraryArtists(username, null).getBody();
         handleFetchedPageData(response.getArtists().getArtist().stream());
         int totalPages = 20; //Integer.parseInt(response.getArtists().getAttributes().getTotalPages());
-        int page = Integer.parseInt(response.getArtists().getAttributes().getPage()) + 1;
+        int page = Integer.parseInt(response.getArtists().getPageAttributes().getPage()) + 1;
 
         while (page <= totalPages) {
             List<CompletableFuture<LastfmGetLibraryArtistsResponse>> artistLibraryThreads = new ArrayList<>();
@@ -82,7 +82,7 @@ public class LastFmArtistApiService {
                 .filter(Objects::nonNull)
                 .map(LastfmArtistMapper::fromArtistInfoToEntity)
                 .forEach(artist -> {
-                    artistRepositoryService.saveArtistInfoIfNotExist(artist);
+                    musicRepositoryService.saveArtistInfoIfNotExist(artist);
                     log.debug("ARTIST: {}, PLAYCOUNT: {}",
                             artist.getName(),
                             artist.getStats().getPlaycount());
