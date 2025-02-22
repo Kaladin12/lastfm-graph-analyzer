@@ -10,7 +10,7 @@ import java.util.List;
 
 @Data
 @Builder
-@Document("artist_info")
+@Document("test_artist_info")
 public class LastfmArtist {
     @Id
     private String mbid;

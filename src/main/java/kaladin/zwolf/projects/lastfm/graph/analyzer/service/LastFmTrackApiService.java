@@ -22,6 +22,7 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @Service
@@ -46,7 +47,7 @@ public class LastFmTrackApiService {
     public void getTopTracks(String user, String period) {
         Period validPeriod = getValidPeriod(period);
         LastfmTopTracksResponse response = lastFmTrackApiAdapter.getTracks(user, validPeriod, null).getBody();
-        // for each track, get artist and album info
+
         handleTracksPageResponse(response.getTopTracks());
 
         int totalPages = 10; //Integer.parseInt(response.getArtists().getAttributes().getTotalPages());
@@ -59,7 +60,6 @@ public class LastFmTrackApiService {
                 topTracksPageThread.add(getTopTracksAsync(user, validPeriod, String.valueOf(page)));
             }
 
-            // Converts the threads list into an array, using CompletableFuture as allocation size
             CompletableFuture.allOf(topTracksPageThread.toArray(new CompletableFuture[0])).join();
 
             topTracksPageThread.stream().map(fetchedPage -> {
@@ -90,15 +90,17 @@ public class LastFmTrackApiService {
     }
 
     private void handleTracksPageResponse(LastfmTopTracksResponse.TopTracks tracks) {
-        Stream<List<LastfmTopTracksResponse.Track>> stream = new ChunkIterator<>(tracks.getTracks().iterator(), THREAD_COUNT).stream();
-
-        stream.flatMap(this::trackInfoStream)
-                .filter(Objects::nonNull)
-                .forEach(e -> {
-                    log.info("Artist: {}, {}", e.getName(), e.getTracks());
-                    musicRepositoryService.saveArtistInfo(e);
+        tracks.getTracks().stream()
+                .collect(Collectors.groupingBy(e -> e.getArtist().getName())) // avoids redundant calls to db :)
+                .forEach((artist, trackList) -> {
+                    Stream<List<LastfmTopTracksResponse.Track>> chunked = new ChunkIterator<>(trackList.iterator(), THREAD_COUNT).stream();
+                    chunked.flatMap(this::trackInfoStream)
+                            .filter(Objects::nonNull)
+                            .forEach(e -> {
+                                log.info("Artist: {}, {}", e.getName(), e.getTracks());
+                                musicRepositoryService.saveArtistInfo(e);
+                            });
                 });
-
     }
 
     private Stream<LastfmArtist> trackInfoStream(List<LastfmTopTracksResponse.Track> tracks) {
