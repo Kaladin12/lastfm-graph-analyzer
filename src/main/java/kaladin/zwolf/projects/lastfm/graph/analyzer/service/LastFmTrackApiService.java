@@ -22,7 +22,6 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 
 @Service
@@ -45,13 +44,41 @@ public class LastFmTrackApiService {
     }
 
     public void getTopTracks(String user, String period) {
-        LastfmTopTracksResponse response = lastFmTrackApiAdapter.getTracks(user,
-                        getValidPeriod(period), null)
-                .getBody();
+        Period validPeriod = getValidPeriod(period);
+        LastfmTopTracksResponse response = lastFmTrackApiAdapter.getTracks(user, validPeriod, null).getBody();
         // for each track, get artist and album info
         handleTracksPageResponse(response.getTopTracks());
 
-        // get remaining pages
+        int totalPages = 10; //Integer.parseInt(response.getArtists().getAttributes().getTotalPages());
+        int page = Integer.parseInt(response.getTopTracks().getPageAttributes().getPage()) + 1;
+
+        while (page <= totalPages) {
+            List<CompletableFuture<LastfmTopTracksResponse>> topTracksPageThread = new ArrayList<>();
+
+            for (int thread = 0; thread < THREAD_COUNT && page <= totalPages; thread++, page++) {
+                topTracksPageThread.add(getTopTracksAsync(user, validPeriod, String.valueOf(page)));
+            }
+
+            // Converts the threads list into an array, using CompletableFuture as allocation size
+            CompletableFuture.allOf(topTracksPageThread.toArray(new CompletableFuture[0])).join();
+
+            topTracksPageThread.stream().map(fetchedPage -> {
+                        try {
+                            return fetchedPage.get().getTopTracks();
+                        } catch (InterruptedException | ExecutionException e) {
+                            log.error("Cant get top tracks: {}", e.getMessage());
+                            return null;
+                        }
+                    })
+                    .filter(Objects::nonNull)
+                    .forEach(this::handleTracksPageResponse);
+            log.info("{}/{} PAGES COMPLETED", page - 1, totalPages);
+        }
+    }
+
+    @Async
+    protected CompletableFuture<LastfmTopTracksResponse> getTopTracksAsync(String user, Period period, String page) {
+        return CompletableFuture.completedFuture(lastFmTrackApiAdapter.getTracks(user, period, page).getBody());
     }
 
     private Period getValidPeriod(String period) {
@@ -68,7 +95,7 @@ public class LastFmTrackApiService {
         stream.flatMap(this::trackInfoStream)
                 .filter(Objects::nonNull)
                 .forEach(e -> {
-                    log.debug("Artist: {}, {}", e.getName(), e.getTracks());
+                    log.info("Artist: {}, {}", e.getName(), e.getTracks());
                     musicRepositoryService.saveArtistInfo(e);
                 });
 
@@ -129,9 +156,10 @@ public class LastFmTrackApiService {
                         Objects.equals(t.getMbid(), track.getMbid()));
         if (!trackExists) {
             tracks.add(track);
+            artist.setTracks(tracks);
+            return artist;
         }
-        artist.setTracks(tracks);
-        return artist;
+        return null;
     }
 
 }
