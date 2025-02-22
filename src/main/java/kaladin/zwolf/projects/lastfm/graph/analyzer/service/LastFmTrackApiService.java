@@ -2,6 +2,7 @@ package kaladin.zwolf.projects.lastfm.graph.analyzer.service;
 
 import kaladin.zwolf.projects.lastfm.graph.analyzer.adapters.out.LastFmArtistApiAdapter;
 import kaladin.zwolf.projects.lastfm.graph.analyzer.adapters.out.LastFmTrackApiAdapter;
+import kaladin.zwolf.projects.lastfm.graph.analyzer.domain.entity.LastfmArtist;
 import kaladin.zwolf.projects.lastfm.graph.analyzer.domain.entity.LastfmTrack;
 import kaladin.zwolf.projects.lastfm.graph.analyzer.domain.response.LastfmTopTracksResponse;
 import kaladin.zwolf.projects.lastfm.graph.analyzer.domain.response.LastfmTrackInfoResponse;
@@ -16,9 +17,12 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 
 @Service
@@ -62,11 +66,15 @@ public class LastFmTrackApiService {
         Stream<List<LastfmTopTracksResponse.Track>> stream = new ChunkIterator<>(tracks.getTracks().iterator(), THREAD_COUNT).stream();
 
         stream.flatMap(this::trackInfoStream)
-                .forEach(e -> log.info("Track: {}", e));
+                .filter(Objects::nonNull)
+                .forEach(e -> {
+                    log.debug("Artist: {}, {}", e.getName(), e.getTracks());
+                    musicRepositoryService.saveArtistInfo(e);
+                });
 
     }
 
-    private Stream<LastfmTrack> trackInfoStream(List<LastfmTopTracksResponse.Track> tracks) {
+    private Stream<LastfmArtist> trackInfoStream(List<LastfmTopTracksResponse.Track> tracks) {
         List<CompletableFuture<LastfmTrackInfoResponse>> threads = new ArrayList<>();
         for (int threadId = 0; threadId < THREAD_COUNT && threadId < tracks.size(); threadId++) {
             threads.add(getTrackInfoAsync(tracks.get(threadId).getName(),
@@ -84,25 +92,46 @@ public class LastFmTrackApiService {
         return CompletableFuture.completedFuture(lastFmTrackApiAdapter.getTrackInfo(track, mbid, artist).getBody());
     }
 
-    private Stream<LastfmTrack> mapTrackInfoWithRetry(
+    private Stream<LastfmArtist> mapTrackInfoWithRetry(
             CompletableFuture<LastfmTrackInfoResponse> fetchedTrackInfo,
             List<LastfmTopTracksResponse.Track> tracks,
             AtomicInteger index) {
         try {
             LastfmTrackInfoResponse info = fetchedTrackInfo.get();
             int id = index.getAndIncrement();
+
             if (info.getTrack() == null && !tracks.get(id).getMbid().isBlank()) {
                 info = lastFmTrackApiAdapter.getTrackInfo(
                         tracks.get(id).getName(), null, tracks.get(id).getArtist().getName()
                 ).getBody();
             }
-            if (info.getTrack() != null) {
-                return Stream.of(LastfmMapper.fromTrackInfoToEntity(info, tracks.get(id)));
+
+            if (info.getTrack() == null) {
+                return Stream.empty();
             }
-            return Stream.empty();
+
+            LastfmTrack mappedTrack = LastfmMapper.fromTrackInfoToEntity(info, tracks.get(id));
+
+            return musicRepositoryService.findArtistByName(tracks.get(id).getArtist().getName())
+                    .map(artist -> updateArtistWithTrack(artist, mappedTrack))
+                    .stream();
+
         } catch (InterruptedException | ExecutionException ex) {
             throw new RuntimeException(ex);
         }
+    }
+
+    private LastfmArtist updateArtistWithTrack(LastfmArtist artist, LastfmTrack track) {
+        List<LastfmTrack> tracks = Optional.ofNullable(artist.getTracks()).orElse(new ArrayList<>());
+
+        boolean trackExists = tracks.stream()
+                .anyMatch(t -> Objects.equals(t.getName(), track.getName()) &&
+                        Objects.equals(t.getMbid(), track.getMbid()));
+        if (!trackExists) {
+            tracks.add(track);
+        }
+        artist.setTracks(tracks);
+        return artist;
     }
 
 }

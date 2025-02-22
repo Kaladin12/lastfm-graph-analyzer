@@ -10,4 +10,5 @@ public interface MusicRepository extends MongoRepository<LastfmArtist, String> {
     Optional<LastfmArtist> findLastfmArtistByMbid(String mdid);
 
     Optional<LastfmArtist> findLastfmArtistByName(String artistName);
+
 }

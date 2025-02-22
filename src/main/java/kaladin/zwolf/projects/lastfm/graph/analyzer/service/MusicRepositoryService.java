@@ -47,6 +47,10 @@ public class MusicRepositoryService {
         log.warn("ARTIST {} ALREADY EXISTED IN DB", mbid);
     }
 
+    public void saveArtistInfo(LastfmArtist artistInfo) {
+        musicRepository.save(artistInfo);
+    }
+
     private void setTags(LastfmArtist artistInfo) {
         var tags = artistInfo.getTags();
         artistInfo.setTags(tags.subList(0, Math.min(3, tags.size())));
