@@ -16,7 +16,10 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -92,7 +95,7 @@ public class LastFmTrackApiService {
                     chunked.forEach(chunkedTracks -> trackInfoStream(chunkedTracks, originalArtist));
                     if (originalSize < originalArtist.getTracks().size()) {
                         int newSize = originalArtist.getTracks().size();
-                        log.info("{}-{}-{}", artist, newSize-originalSize, newSize);
+                        log.info("{}-{}-{}", artist, newSize - originalSize, newSize);
                         musicRepositoryService.saveArtistInfo(originalArtist);
                     } else {
                         log.info("Not updating {} as no changes were recorded", artist);
@@ -115,7 +118,7 @@ public class LastFmTrackApiService {
 
         threads.forEach(fetchedTrackInfo -> {
             int id = index.getAndIncrement();
-             mapTrackInfoWithRetry(fetchedTrackInfo, tracks.get(id), originalArtist);
+            mapTrackInfoWithRetry(fetchedTrackInfo, tracks.get(id), originalArtist);
         });
     }
 
@@ -147,7 +150,7 @@ public class LastFmTrackApiService {
             mappedTrack.setMbid(MappingUtils.getMbid(mappedTrack.getMbid(), mappedTrack.getName()));
             originalArtist.getTracks().put(mappedTrack.getMbid(), mappedTrack);
         } catch (Exception ex) {
-            log.error("An exception occurred while trying to add {}. Exception: {}",track.getMbid(), ex.getMessage());
+            log.error("An exception occurred while trying to add {}. Exception: {}", track.getMbid(), ex.getMessage());
         }
     }
 }
