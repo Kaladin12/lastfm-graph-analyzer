@@ -6,10 +6,11 @@ import lombok.Data;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
+import java.util.HashMap;
 import java.util.List;
 
 @Data
-@Builder
+@Builder(toBuilder = true)
 @Document("test_artist_info")
 public class LastfmArtist {
     @Id
@@ -17,5 +18,5 @@ public class LastfmArtist {
     private String name;
     private LastfmArtistInfoResponse.Stats stats;
     private List<LastfmArtistInfoResponse.Tag> tags;
-    private List<LastfmTrack> tracks;
+    private HashMap<String, LastfmTrack> tracks;
 }

@@ -2,6 +2,7 @@ package kaladin.zwolf.projects.lastfm.graph.analyzer.service;
 
 import kaladin.zwolf.projects.lastfm.graph.analyzer.domain.entity.LastfmArtist;
 import kaladin.zwolf.projects.lastfm.graph.analyzer.ports.out.MusicRepository;
+import kaladin.zwolf.projects.lastfm.graph.analyzer.util.MappingUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -30,13 +31,9 @@ public class MusicRepositoryService {
     public void saveArtistInfoIfNotExist(LastfmArtist artistInfo) {
         String mbid = artistInfo.getMbid();
         String name = artistInfo.getName();
-        if (mbid == null) {
-            artistInfo.setMbid(
-                    UUID.nameUUIDFromBytes(name.getBytes()).toString()
-            );
-            mbid = artistInfo.getMbid();
-            log.debug("Artist {} had null Mbid, setting it to {}", name, mbid);
-        }
+        artistInfo.setMbid(MappingUtils.getMbid(mbid, name));
+        mbid = artistInfo.getMbid();
+
         var exists = findArtistByMbid(artistInfo.getMbid());
         if (exists.isEmpty()) {
             setTags(artistInfo);

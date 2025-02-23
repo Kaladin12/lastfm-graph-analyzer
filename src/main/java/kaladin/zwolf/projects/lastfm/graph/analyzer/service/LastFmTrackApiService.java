@@ -9,16 +9,14 @@ import kaladin.zwolf.projects.lastfm.graph.analyzer.domain.response.LastfmTrackI
 import kaladin.zwolf.projects.lastfm.graph.analyzer.domain.response.enums.Period;
 import kaladin.zwolf.projects.lastfm.graph.analyzer.service.mapper.LastfmMapper;
 import kaladin.zwolf.projects.lastfm.graph.analyzer.util.ChunkIterator;
+import kaladin.zwolf.projects.lastfm.graph.analyzer.util.MappingUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -44,13 +42,14 @@ public class LastFmTrackApiService {
         this.musicRepositoryService = musicRepositoryService;
     }
 
+    @Async
     public void getTopTracks(String user, String period) {
-        Period validPeriod = getValidPeriod(period);
-        LastfmTopTracksResponse response = lastFmTrackApiAdapter.getTracks(user, validPeriod, null).getBody();
+        Period validPeriod = MappingUtils.getValidPeriod(period);
+        LastfmTopTracksResponse response = lastFmTrackApiAdapter.getTracks(user, validPeriod, "26").getBody();
 
         handleTracksPageResponse(response.getTopTracks());
 
-        int totalPages = 10; //Integer.parseInt(response.getArtists().getAttributes().getTotalPages());
+        int totalPages = 26; //Integer.parseInt(response.getArtists().getAttributes().getTotalPages());
         int page = Integer.parseInt(response.getTopTracks().getPageAttributes().getPage()) + 1;
 
         while (page <= totalPages) {
@@ -81,29 +80,30 @@ public class LastFmTrackApiService {
         return CompletableFuture.completedFuture(lastFmTrackApiAdapter.getTracks(user, period, page).getBody());
     }
 
-    private Period getValidPeriod(String period) {
-        try {
-            return Period.valueOf(period);
-        } catch (Exception e) {
-            return Period.OVERALL;
-        }
-    }
-
     private void handleTracksPageResponse(LastfmTopTracksResponse.TopTracks tracks) {
         tracks.getTracks().stream()
                 .collect(Collectors.groupingBy(e -> e.getArtist().getName())) // avoids redundant calls to db :)
-                .forEach((artist, trackList) -> {
+                .forEach((artist, trackList) -> musicRepositoryService.findArtistByName(artist).ifPresent(originalArtist -> {
+                    if (originalArtist.getTracks() == null) {
+                        originalArtist.setTracks(new HashMap<>());
+                    }
+                    int originalSize = originalArtist.getTracks().size();
                     Stream<List<LastfmTopTracksResponse.Track>> chunked = new ChunkIterator<>(trackList.iterator(), THREAD_COUNT).stream();
-                    chunked.flatMap(this::trackInfoStream)
-                            .filter(Objects::nonNull)
-                            .forEach(e -> {
-                                log.info("Artist: {}, {}", e.getName(), e.getTracks());
-                                musicRepositoryService.saveArtistInfo(e);
-                            });
-                });
+                    chunked.forEach(chunkedTracks -> trackInfoStream(chunkedTracks, originalArtist));
+                    if (originalSize < originalArtist.getTracks().size()) {
+                        int newSize = originalArtist.getTracks().size();
+                        log.info("{}-{}-{}", artist, newSize-originalSize, newSize);
+                        musicRepositoryService.saveArtistInfo(originalArtist);
+                    } else {
+                        log.info("Not updating {} as no changes were recorded", artist);
+                    }
+                }));
     }
 
-    private Stream<LastfmArtist> trackInfoStream(List<LastfmTopTracksResponse.Track> tracks) {
+    private void trackInfoStream(
+            List<LastfmTopTracksResponse.Track> tracks,
+            LastfmArtist originalArtist
+    ) {
         List<CompletableFuture<LastfmTrackInfoResponse>> threads = new ArrayList<>();
         for (int threadId = 0; threadId < THREAD_COUNT && threadId < tracks.size(); threadId++) {
             threads.add(getTrackInfoAsync(tracks.get(threadId).getName(),
@@ -113,7 +113,10 @@ public class LastFmTrackApiService {
 
         AtomicInteger index = new AtomicInteger(0);
 
-        return threads.stream().flatMap(fetchedTrackInfo -> mapTrackInfoWithRetry(fetchedTrackInfo, tracks, index));
+        threads.forEach(fetchedTrackInfo -> {
+            int id = index.getAndIncrement();
+             mapTrackInfoWithRetry(fetchedTrackInfo, tracks.get(id), originalArtist);
+        });
     }
 
     @Async
@@ -121,47 +124,30 @@ public class LastFmTrackApiService {
         return CompletableFuture.completedFuture(lastFmTrackApiAdapter.getTrackInfo(track, mbid, artist).getBody());
     }
 
-    private Stream<LastfmArtist> mapTrackInfoWithRetry(
+    private void mapTrackInfoWithRetry(
             CompletableFuture<LastfmTrackInfoResponse> fetchedTrackInfo,
-            List<LastfmTopTracksResponse.Track> tracks,
-            AtomicInteger index) {
+            LastfmTopTracksResponse.Track track,
+            LastfmArtist originalArtist) {
         try {
-            LastfmTrackInfoResponse info = fetchedTrackInfo.get();
-            int id = index.getAndIncrement();
-
-            if (info.getTrack() == null && !tracks.get(id).getMbid().isBlank()) {
-                info = lastFmTrackApiAdapter.getTrackInfo(
-                        tracks.get(id).getName(), null, tracks.get(id).getArtist().getName()
-                ).getBody();
+            LastfmTrackInfoResponse infoResponse = fetchedTrackInfo.get();
+            if (infoResponse.getTrack() == null && !track.getName().isBlank()) {
+                infoResponse = lastFmTrackApiAdapter
+                        .getTrackInfo(track.getName(), null, track.getArtist().getName()).getBody();
             }
-
-            if (info.getTrack() == null) {
-                return Stream.empty();
+            if (infoResponse.getTrack() == null) {
+                log.error("DROPPING {}", track.getName());
+                return;
             }
-
-            LastfmTrack mappedTrack = LastfmMapper.fromTrackInfoToEntity(info, tracks.get(id));
-
-            return musicRepositoryService.findArtistByName(tracks.get(id).getArtist().getName())
-                    .map(artist -> updateArtistWithTrack(artist, mappedTrack))
-                    .stream();
-
-        } catch (InterruptedException | ExecutionException ex) {
-            throw new RuntimeException(ex);
+            LastfmTrack mappedTrack = LastfmMapper.fromTrackInfoToEntity(infoResponse, track);
+            // Yay! O(1)
+            if (originalArtist.getTracks().containsKey(mappedTrack.getMbid())) {
+                log.error("DROPPING {}", track.getName());
+                return;
+            }
+            mappedTrack.setMbid(MappingUtils.getMbid(mappedTrack.getMbid(), mappedTrack.getName()));
+            originalArtist.getTracks().put(mappedTrack.getMbid(), mappedTrack);
+        } catch (Exception ex) {
+            log.error("An exception occurred while trying to add {}. Exception: {}",track.getMbid(), ex.getMessage());
         }
     }
-
-    private LastfmArtist updateArtistWithTrack(LastfmArtist artist, LastfmTrack track) {
-        List<LastfmTrack> tracks = Optional.ofNullable(artist.getTracks()).orElse(new ArrayList<>());
-
-        boolean trackExists = tracks.stream()
-                .anyMatch(t -> Objects.equals(t.getName(), track.getName()) &&
-                        Objects.equals(t.getMbid(), track.getMbid()));
-        if (!trackExists) {
-            tracks.add(track);
-            artist.setTracks(tracks);
-            return artist;
-        }
-        return null;
-    }
-
 }

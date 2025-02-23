@@ -6,11 +6,13 @@ import kaladin.zwolf.projects.lastfm.graph.analyzer.service.LastFmArtistApiServi
 import kaladin.zwolf.projects.lastfm.graph.analyzer.service.LastFmTrackApiService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/v1/lastfm")
 @CrossOrigin("*")
+@EnableAsync
 public class LastfmAdapter {
     private final Logger log = LoggerFactory.getLogger(LastfmAdapter.class);
 
@@ -38,8 +40,9 @@ public class LastfmAdapter {
     }
 
     @GetMapping("/track/top/{username}")
-    public void getTrackTop(@PathVariable String username, @RequestParam("period") String period) {
+    public String getTrackTop(@PathVariable String username, @RequestParam("period") String period) {
         lastFmTrackApiService.getTopTracks(username, period);
+        return "Your request is being processed :)";
     }
 
     @GetMapping("/library/{username}")
