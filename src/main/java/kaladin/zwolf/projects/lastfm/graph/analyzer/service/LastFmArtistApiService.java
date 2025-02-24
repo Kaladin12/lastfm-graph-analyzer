@@ -2,7 +2,7 @@ package kaladin.zwolf.projects.lastfm.graph.analyzer.service;
 
 import kaladin.zwolf.projects.lastfm.graph.analyzer.util.ChunkIterator;
 import kaladin.zwolf.projects.lastfm.graph.analyzer.adapters.out.LastFmArtistApiAdapter;
-import kaladin.zwolf.projects.lastfm.graph.analyzer.domain.entity.LastfmArtist;
+import kaladin.zwolf.projects.lastfm.graph.analyzer.domain.entity.mongo.LastfmArtist;
 import kaladin.zwolf.projects.lastfm.graph.analyzer.domain.response.LastfmArtistInfoResponse;
 import kaladin.zwolf.projects.lastfm.graph.analyzer.domain.response.LastfmGetLibraryArtistsResponse;
 import kaladin.zwolf.projects.lastfm.graph.analyzer.service.mapper.LastfmMapper;

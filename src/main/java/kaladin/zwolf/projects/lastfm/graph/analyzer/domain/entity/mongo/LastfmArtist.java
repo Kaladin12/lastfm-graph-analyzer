@@ -1,4 +1,4 @@
-package kaladin.zwolf.projects.lastfm.graph.analyzer.domain.entity;
+package kaladin.zwolf.projects.lastfm.graph.analyzer.domain.entity.mongo;
 
 import kaladin.zwolf.projects.lastfm.graph.analyzer.domain.response.LastfmArtistInfoResponse;
 import lombok.Builder;

@@ -1,6 +1,6 @@
 package kaladin.zwolf.projects.lastfm.graph.analyzer.ports.out;
 
-import kaladin.zwolf.projects.lastfm.graph.analyzer.domain.entity.LastfmArtist;
+import kaladin.zwolf.projects.lastfm.graph.analyzer.domain.entity.mongo.LastfmArtist;
 import org.springframework.data.mongodb.repository.MongoRepository;
 
 import java.util.Optional;
