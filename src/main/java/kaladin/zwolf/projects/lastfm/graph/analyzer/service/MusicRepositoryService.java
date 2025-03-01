@@ -2,6 +2,7 @@ package kaladin.zwolf.projects.lastfm.graph.analyzer.service;
 
 import kaladin.zwolf.projects.lastfm.graph.analyzer.domain.entity.mongo.LastfmArtist;
 import kaladin.zwolf.projects.lastfm.graph.analyzer.domain.entity.mongo.LastfmTrack;
+import kaladin.zwolf.projects.lastfm.graph.analyzer.domain.entity.mongo.LastfmTrack.Album;
 import kaladin.zwolf.projects.lastfm.graph.analyzer.ports.out.MusicRepository;
 import kaladin.zwolf.projects.lastfm.graph.analyzer.util.MappingUtils;
 import org.slf4j.Logger;
@@ -51,9 +52,9 @@ public class MusicRepositoryService {
   }
 
   public List<LastfmTrack> findAllTracksByArtist(String mbid) {
-    Optional<LastfmArtist> idk = musicRepository.findLastfmArtistByMbid(mbid);
+    Optional<LastfmArtist> result = musicRepository.findLastfmArtistByMbid(mbid);
     List<LastfmTrack> tracks = new ArrayList<>();
-    idk.ifPresent(artist -> {
+    result.ifPresent(artist -> {
       tracks.addAll(artist.getTracks().values());
     });
     return tracks;

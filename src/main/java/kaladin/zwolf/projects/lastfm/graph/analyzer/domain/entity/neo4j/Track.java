@@ -2,6 +2,7 @@ package kaladin.zwolf.projects.lastfm.graph.analyzer.domain.entity.neo4j;
 
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.Builder;
 import org.springframework.data.neo4j.core.schema.Id;
 import org.springframework.data.neo4j.core.schema.Node;
 import org.springframework.data.neo4j.core.schema.Relationship;
