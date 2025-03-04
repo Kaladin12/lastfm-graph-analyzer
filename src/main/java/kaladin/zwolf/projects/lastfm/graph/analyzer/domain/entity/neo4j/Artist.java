@@ -1,5 +1,6 @@
 package kaladin.zwolf.projects.lastfm.graph.analyzer.domain.entity.neo4j;
 
+import java.util.HashSet;
 import java.util.Set;
 
 import org.springframework.data.neo4j.core.schema.Id;
@@ -22,4 +23,11 @@ public class Artist {
 
   @Relationship("RELEASED")
   public Set<Album> albums;
+
+  public void hasReleased(Album album) {
+    if (this.albums == null) {
+      this.albums = new HashSet<>();
+    }
+    this.albums.add(album);
+  }
 }

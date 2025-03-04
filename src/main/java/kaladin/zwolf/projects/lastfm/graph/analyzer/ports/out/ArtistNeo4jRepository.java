@@ -1,11 +1,7 @@
-package kaladin.zwolf.projects.lastfm.graph.analyzer.service;
+package kaladin.zwolf.projects.lastfm.graph.analyzer.ports.out;
 
-import org.springframework.data.neo4j.core.schema.Node;
+import kaladin.zwolf.projects.lastfm.graph.analyzer.domain.entity.neo4j.Artist;
+import org.springframework.data.neo4j.repository.Neo4jRepository;
 
-import lombok.Data;
-
-@Data
-@Node
-public class ArtistNeo4Repository {
-
+public interface ArtistNeo4jRepository extends Neo4jRepository<Artist, String> {
 }
