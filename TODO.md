@@ -1,4 +1,4 @@
-- [ ] Generate Neo4J nodes, relations and attributes
-- [ ] Replicate Mongo data into Neo4J following above schema
+- [x] Generate Neo4J nodes, relations and attributes
+- [x] Replicate Mongo data into Neo4J following above schema
 - [ ] Fetch latest played songs with Quartz daily job
-- [ ] Analytics with Neo4J
+- [ ] Analytics with Neo4J and some trashy UI
