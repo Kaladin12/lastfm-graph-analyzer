@@ -1,12 +1,8 @@
 package kaladin.zwolf.projects.lastfm.graph.analyzer.adapters.in;
 
 import kaladin.zwolf.projects.lastfm.graph.analyzer.domain.entity.mongo.LastfmArtist;
-import kaladin.zwolf.projects.lastfm.graph.analyzer.domain.entity.mongo.LastfmTrack;
-import kaladin.zwolf.projects.lastfm.graph.analyzer.domain.entity.neo4j.Album;
-import kaladin.zwolf.projects.lastfm.graph.analyzer.domain.entity.neo4j.Artist;
 import kaladin.zwolf.projects.lastfm.graph.analyzer.service.*;
 import org.slf4j.Logger;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
@@ -14,9 +10,6 @@ import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
-
-import kaladin.zwolf.projects.lastfm.graph.analyzer.domain.entity.neo4j.Track;
-import kaladin.zwolf.projects.lastfm.graph.analyzer.service.mapper.EntityMapper;
 
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -37,13 +30,13 @@ public class LoadAdapter {
 
   @GetMapping("/artist/{id}/track/all")
   public ResponseEntity<String> getMethodName(@PathVariable String id) {
-    loaderService.findAndLoadTrack(id);
+    loaderService.findAndLoadTracks(id);
     return ResponseEntity.accepted().body("YAY!");
   }
 
   @GetMapping("/artist/{id}/album/all")
   public ResponseEntity<String> getAlbums(@PathVariable String id) {
-    loaderService.findAndLoadAlbum(id);
+    loaderService.findAndLoadAlbums(id);
     return ResponseEntity.ok("");
   }
 

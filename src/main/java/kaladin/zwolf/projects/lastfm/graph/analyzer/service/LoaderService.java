@@ -6,14 +6,14 @@ import kaladin.zwolf.projects.lastfm.graph.analyzer.domain.entity.neo4j.Artist;
 import kaladin.zwolf.projects.lastfm.graph.analyzer.domain.entity.neo4j.Track;
 import kaladin.zwolf.projects.lastfm.graph.analyzer.service.mapper.EntityMapper;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
-import java.util.Optional;
+import java.util.concurrent.atomic.AtomicReference;
 
 @Service
 public class LoaderService {
-    private final Logger log = org.slf4j.LoggerFactory.getLogger(LoaderService.class);
+    private final Logger log = LoggerFactory.getLogger(LoaderService.class);
 
     private final MusicRepositoryService musicRepositoryService;
     private final TrackNeo4jService trackNeo4jService;
@@ -28,24 +28,25 @@ public class LoaderService {
         this.artistNeo4jService = artistNeo4jService;
     }
 
-    public void findAndLoadTrack(String id) {
+    public void findAndLoadTracks(String id) {
         musicRepositoryService.findAllTracksByArtist(id)
             .forEach(this::loadTrack);
     }
 
-    public void findAndLoadAlbum(String id) {
+    public Album findAndLoadAlbums(String id) {
+        AtomicReference<Album> loadedAlbum = new AtomicReference<>();
         musicRepositoryService.findAllAlbumsByArtist(id)
             .forEach(album -> {
-                loadAlbum(album, id);
+                 loadedAlbum.set(loadAlbum(album, id));
             });
+        return loadedAlbum.get();
     }
 
     public void findAndLoadArtist(String id) {
         var artist = musicRepositoryService.findArtistByMbid(id);
         if (artist.isPresent()) {
             Artist mappedArtist = EntityMapper.fromMongoToNeo(artist.get());
-            musicRepositoryService.findAllAlbumsByArtist(id)
-                .forEach(album -> mappedArtist.hasReleased(loadAlbum(album, id)));
+            mappedArtist.hasReleased(findAndLoadAlbums(id));
             artistNeo4jService.saveArtist(mappedArtist);
         }
     }
