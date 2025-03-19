@@ -47,7 +47,12 @@ public class LoaderService {
         if (artist.isPresent()) {
             Artist mappedArtist = EntityMapper.fromMongoToNeo(artist.get());
             mappedArtist.hasReleased(findAndLoadAlbums(id));
-            artistNeo4jService.saveArtist(mappedArtist);
+            try {
+                artistNeo4jService.saveArtist(mappedArtist);
+            } catch (Exception e) {
+                log.error("Could not save artist {} due to: {}", mappedArtist.getName(), e.getMessage());
+            }
+
         }
     }
 

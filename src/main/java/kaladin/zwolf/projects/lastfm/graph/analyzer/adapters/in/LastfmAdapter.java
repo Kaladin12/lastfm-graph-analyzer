@@ -48,4 +48,9 @@ public class LastfmAdapter {
     public void getLibrary(@PathVariable String username) {
         lastFmArtistApiService.getLibraryArtists(username);
     }
+
+    @GetMapping("/library/{username}/artist/{id}")
+    public void getLibraryArtist(@PathVariable String username, @PathVariable String id) {
+        
+    }
 }

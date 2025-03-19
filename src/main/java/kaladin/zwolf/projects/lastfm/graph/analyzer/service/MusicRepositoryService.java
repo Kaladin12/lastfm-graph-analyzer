@@ -66,6 +66,9 @@ public class MusicRepositoryService {
     Optional<LastfmArtist> result = musicRepository.findLastfmArtistByMbid(mbid);
     List<Album> albums = new ArrayList<>();
     result.ifPresent(artist -> {
+      if (artist.getTracks() == null || artist.getTracks().isEmpty() ) {
+        return;
+      }
       albums.addAll(artist.getTracks().values().stream()
               .filter(track -> track.getAlbum() != null)
               .map(this::setAlbumId)

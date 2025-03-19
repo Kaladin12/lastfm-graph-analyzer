@@ -2,3 +2,4 @@
 - [x] Replicate Mongo data into Neo4J following above schema
 - [ ] Fetch latest played songs with Quartz daily job
 - [ ] Analytics with Neo4J and some trashy UI
+- [ ] Special endpoints for artist, album and track ... through GraphQL?
