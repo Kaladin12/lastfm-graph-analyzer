@@ -8,7 +8,10 @@ import kaladin.zwolf.projects.lastfm.graph.analyzer.domain.response.LastfmGetLib
 import kaladin.zwolf.projects.lastfm.graph.analyzer.service.mapper.LastfmMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.task.AsyncTaskExecutor;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
@@ -16,6 +19,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -29,6 +33,10 @@ public class LastFmArtistApiService {
 
     @Value("${thread.count}")
     private int THREAD_COUNT;
+
+    @Autowired
+    @Qualifier("applicationTaskExecutor")
+    private AsyncTaskExecutor asyncTaskExecutor;
 
     public LastFmArtistApiService(LastFmArtistApiAdapter lastFmArtistApiAdapter,
                                   MusicRepositoryService musicRepositoryService) {
@@ -55,28 +63,27 @@ public class LastFmArtistApiService {
 
     public void getLibraryArtists(String username) {
         LastfmGetLibraryArtistsResponse response = lastFmArtistApiAdapter.getLibraryArtists(username, null).getBody();
-        handleFetchedPageData(response.getArtists().getArtist().stream());
+        //handleFetchedPageData(response.getArtists().getArtist().stream());
         int totalPages = 20; //Integer.parseInt(response.getArtists().getAttributes().getTotalPages());
-        int page = Integer.parseInt(response.getArtists().getPageAttributes().getPage()) + 1;
+        AtomicInteger page = new AtomicInteger(Integer.parseInt(response.getArtists().getPageAttributes().getPage()) + 1);
 
-        while (page <= totalPages) {
+        while (page.get() <= totalPages) {
             List<CompletableFuture<LastfmGetLibraryArtistsResponse>> artistLibraryThreads = new ArrayList<>();
 
-            IntStream.range(0, 20).forEach(thread -> {
-
+            IntStream.range(1, 20).forEach(thread -> {
+                artistLibraryThreads.add(asyncTaskExecutor.submitCompletable(() ->
+                        lastFmArtistApiAdapter.getLibraryArtists(username, String.valueOf(thread)).getBody()));
+                log.info("Fetched artist library thread {}", thread);
+                page.addAndGet(1);
             });
-
-            for (int thread = 0; thread < THREAD_COUNT && page <= totalPages; thread++, page++) {
-                artistLibraryThreads.add(getLibraryArtistAsync(username, String.valueOf(page)));
-            }
 
             // Converts the threads list into an array, using CompletableFuture as allocation size
             CompletableFuture.allOf(artistLibraryThreads.toArray(new CompletableFuture[0])).join();
 
-            Stream<LastfmGetLibraryArtistsResponse.Artist> fetchedPagesArtists = artistLibraryThreads
-                    .stream().flatMap(this::artistStream);
-            handleFetchedPageData(fetchedPagesArtists);
-            log.info("{}/{} PAGES COMPLETED", page - 1, totalPages);
+//            Stream<LastfmGetLibraryArtistsResponse.Artist> fetchedPagesArtists = artistLibraryThreads
+//                    .stream().flatMap(this::artistStream);
+//            handleFetchedPageData(fetchedPagesArtists);
+            log.info("{}/{} PAGES COMPLETED", page.get() - 1, totalPages);
         }
     }
 

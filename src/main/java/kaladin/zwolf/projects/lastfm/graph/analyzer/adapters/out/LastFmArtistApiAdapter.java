@@ -60,6 +60,7 @@ public class LastFmArtistApiAdapter extends LastFmApiAdapter {
     }
 
     public ResponseEntity<LastfmGetLibraryArtistsResponse> getLibraryArtists(String username, String page) {
+        System.out.println("In thread: " + Thread.currentThread().threadId());
         return lastfmRestClient.post()
                 .uri(uriBuilder -> {
                     uriBuilder = getLibraryArtistsUriBuilder(username, uriBuilder);
