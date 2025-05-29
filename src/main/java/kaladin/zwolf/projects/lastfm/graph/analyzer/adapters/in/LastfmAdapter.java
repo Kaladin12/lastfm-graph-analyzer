@@ -15,8 +15,8 @@ import org.springframework.web.bind.annotation.*;
 public class LastfmAdapter {
     private final Logger log = LoggerFactory.getLogger(LastfmAdapter.class);
 
-    private LastFmArtistApiService lastFmArtistApiService;
-    private LastFmTrackApiService lastFmTrackApiService;
+    private final LastFmArtistApiService lastFmArtistApiService;
+    private final LastFmTrackApiService lastFmTrackApiService;
 
     public LastfmAdapter(LastFmArtistApiService lastFmArtistApiService, LastFmTrackApiService lastFmTrackApiService) {
         this.lastFmArtistApiService = lastFmArtistApiService;
