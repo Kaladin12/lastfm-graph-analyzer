@@ -16,6 +16,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
@@ -60,6 +61,10 @@ public class LastFmArtistApiService {
 
         while (page <= totalPages) {
             List<CompletableFuture<LastfmGetLibraryArtistsResponse>> artistLibraryThreads = new ArrayList<>();
+
+            IntStream.range(0, 20).forEach(thread -> {
+
+            });
 
             for (int thread = 0; thread < THREAD_COUNT && page <= totalPages; thread++, page++) {
                 artistLibraryThreads.add(getLibraryArtistAsync(username, String.valueOf(page)));
