@@ -7,6 +7,7 @@ import kaladin.zwolf.projects.lastfm.graph.analyzer.service.LastFmArtistApiServi
 import kaladin.zwolf.projects.lastfm.graph.analyzer.service.LastFmTrackApiService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.web.bind.annotation.*;
 
@@ -49,8 +50,9 @@ public class LastfmAdapter {
     }
 
     @GetMapping("/library/{username}")
-    public void getLibrary(@PathVariable String username) {
+    public ResponseEntity<String> getLibrary(@PathVariable String username) {
         lastFmArtistApiService.getLibraryArtists(username);
+        return ResponseEntity.accepted().body("Your request is being processed :)");
     }
 
     @GetMapping("/library/{username}/artists/{id}")

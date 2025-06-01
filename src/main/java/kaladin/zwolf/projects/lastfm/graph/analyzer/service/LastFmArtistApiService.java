@@ -68,6 +68,7 @@ public class LastFmArtistApiService {
                 });
     }
 
+    @Async
     public void getLibraryArtists(String username) {
         LastfmGetLibraryArtistsResponse response = lastFmArtistApiAdapter.getLibraryArtists(username, null).getBody();
         // the APIs should always return Optional ... TODO

@@ -46,7 +46,7 @@ public class MusicRepositoryService {
       log.debug("ARTIST {} SAVED", mbid);
       return true;
     }
-    log.warn("ARTIST {} ALREADY EXISTED IN DB", mbid);
+    log.debug("ARTIST {} ALREADY EXISTED IN DB", mbid);
     return false;
   }
 

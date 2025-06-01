@@ -45,7 +45,7 @@ public class LoaderService {
     public void findAndLoadArtist(String id) {
         var artist = musicRepositoryService.findArtistByMbid(id);
         if (artist.isPresent()) {
-            Artist mappedArtist = EntityMapper.fromMongoToNeo(artist.get());
+            Artist mappedArtist = EntityMapper.INSTANCE.mongoToNeo4jArtist(artist.get());
             mappedArtist.hasReleased(findAndLoadAlbums(id));
             try {
                 artistNeo4jService.saveArtist(mappedArtist);
@@ -58,7 +58,7 @@ public class LoaderService {
 
     public Track loadTrack(LastfmTrack track) {
         log.info("TRACK: {}", track.getName());
-        Track mappedTrack = EntityMapper.fromMongoToNeo(track);
+        Track mappedTrack = EntityMapper.INSTANCE.mongoToNeo4jTrack(track);
         log.info("Mapped track: {}", mappedTrack);
         trackNeo4jService.saveTrack(mappedTrack);
         return mappedTrack;
@@ -66,7 +66,7 @@ public class LoaderService {
 
     public Album loadAlbum(LastfmTrack.Album album, String artistId) {
         log.info("ALBUM: {}", album.getName());
-        Album mappedAlbum = EntityMapper.fromMongoToNeo(album);
+        Album mappedAlbum = EntityMapper.INSTANCE.mongoToNeo4jAlbum(album);
         log.info("Mapped album: {}", mappedAlbum);
         musicRepositoryService.findAllTracksByAlbum(artistId, album.getMbid())
                 .forEach(track -> mappedAlbum.hasTrack(loadTrack(track)));

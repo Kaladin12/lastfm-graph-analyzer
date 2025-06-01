@@ -1,43 +1,24 @@
 package kaladin.zwolf.projects.lastfm.graph.analyzer.service.mapper;
 
 import kaladin.zwolf.projects.lastfm.graph.analyzer.domain.entity.mongo.LastfmArtist;
+import kaladin.zwolf.projects.lastfm.graph.analyzer.domain.entity.mongo.LastfmTrack;
 import kaladin.zwolf.projects.lastfm.graph.analyzer.domain.entity.neo4j.Album;
 import kaladin.zwolf.projects.lastfm.graph.analyzer.domain.entity.neo4j.Artist;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import kaladin.zwolf.projects.lastfm.graph.analyzer.domain.entity.mongo.LastfmTrack;
 import kaladin.zwolf.projects.lastfm.graph.analyzer.domain.entity.neo4j.Track;
+import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
+import org.mapstruct.factory.Mappers;
 
-public class EntityMapper {
-  private final Logger log = LoggerFactory.getLogger(EntityMapper.class);
+@Mapper
+public interface EntityMapper {
+    EntityMapper INSTANCE = Mappers.getMapper(EntityMapper.class);
 
-  private EntityMapper() {
-  }
+    @Mapping(target = "title", source = "name")
+    @Mapping(target = "playCount", source = "playcount")
+    Track mongoToNeo4jTrack(LastfmTrack lastfmTrack);
 
-  public static Track fromMongoToNeo(LastfmTrack original) {
-    Track neoTrack = new Track();
-    neoTrack.setMbid(original.getMbid());
-    neoTrack.setDuration(original.getDuration());
-    neoTrack.setTitle(original.getName());
-    neoTrack.setPlayCount(original.getPlaycount());
-    neoTrack.setRank(original.getRank());
+    @Mapping(target = "id", source = "mbid")
+    Album mongoToNeo4jAlbum(LastfmTrack.Album album);
 
-    return neoTrack;
-  }
-
-  public static Album fromMongoToNeo(LastfmTrack.Album original) {
-    Album neoAlbum = new Album();
-    neoAlbum.setId(original.getMbid());
-    neoAlbum.setName(original.getName());
-    return neoAlbum;
-  }
-
-  public static Artist fromMongoToNeo(LastfmArtist original) {
-    Artist neoArtist = new Artist();
-    neoArtist.setName(original.getName());
-    neoArtist.setMbid(original.getMbid());
-    return neoArtist;
-  }
-
+    Artist mongoToNeo4jArtist(LastfmArtist lastfmArtist);
 }
