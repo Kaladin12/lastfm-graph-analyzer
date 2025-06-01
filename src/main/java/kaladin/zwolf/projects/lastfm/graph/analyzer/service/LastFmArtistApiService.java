@@ -20,6 +20,7 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -33,6 +34,9 @@ public class LastFmArtistApiService {
 
     @Value("${thread.count}")
     private int THREAD_COUNT;
+
+    @Value("${mongo.connection-pool.max}")
+    private int MAX_CONNECTION_POOL_SIZE;
 
     @Autowired
     @Qualifier("applicationTaskExecutor")
@@ -54,17 +58,25 @@ public class LastFmArtistApiService {
         return null;
     }
 
-    public LastfmArtist getArtistInfo(String name) {
-        LastfmArtistInfoResponse artistInfo = lastFmArtistApiAdapter.getArtistInfo(name, null).getBody();
-        LastfmArtist artist = LastfmMapper.fromArtistInfoToEntity(artistInfo);
-        musicRepositoryService.saveArtistInfoIfNotExist(artist);
-        return artist;
+    public Optional<LastfmArtist> getArtistInfo(String name) {
+        return lastFmArtistApiAdapter.getArtistInfo(name, null)
+                .filter(responseEntity -> Objects.nonNull(responseEntity.getBody()))
+                .map(responseEntity -> LastfmMapper.fromArtistInfoToEntity(responseEntity.getBody()))
+                .map(lastfmArtist -> {
+                    musicRepositoryService.saveArtistInfoIfNotExist(lastfmArtist);
+                    return lastfmArtist;
+                });
     }
 
     public void getLibraryArtists(String username) {
         LastfmGetLibraryArtistsResponse response = lastFmArtistApiAdapter.getLibraryArtists(username, null).getBody();
-        //handleFetchedPageData(response.getArtists().getArtist().stream());
-        int totalPages = 20; //Integer.parseInt(response.getArtists().getAttributes().getTotalPages());
+        // the APIs should always return Optional ... TODO
+        if (response == null || response.getArtists() == null) {
+            return;
+        }
+        handleFetchedPageData(response.getArtists().getArtist().stream());
+
+        int totalPages = Math.min(20, Integer.parseInt(response.getArtists().getPageAttributes().getTotalPages()));
         AtomicInteger page = new AtomicInteger(Integer.parseInt(response.getArtists().getPageAttributes().getPage()) + 1);
 
         while (page.get() <= totalPages) {
@@ -77,55 +89,46 @@ public class LastFmArtistApiService {
                 page.addAndGet(1);
             });
 
-            // Converts the threads list into an array, using CompletableFuture as allocation size
             CompletableFuture.allOf(artistLibraryThreads.toArray(new CompletableFuture[0])).join();
-
-//            Stream<LastfmGetLibraryArtistsResponse.Artist> fetchedPagesArtists = artistLibraryThreads
-//                    .stream().flatMap(this::artistStream);
-//            handleFetchedPageData(fetchedPagesArtists);
+            // TODO: Need to handle first page.
+            Stream<LastfmGetLibraryArtistsResponse.Artist> fetchedPagesArtists = artistLibraryThreads
+                   .stream().flatMap(this::artistStream);
+            handleFetchedPageData(fetchedPagesArtists);
             log.info("{}/{} PAGES COMPLETED", page.get() - 1, totalPages);
         }
     }
 
-    private void handleFetchedPageData(Stream<LastfmGetLibraryArtistsResponse.Artist> fetchedPageArtists) {
+    protected void handleFetchedPageData(Stream<LastfmGetLibraryArtistsResponse.Artist> fetchedPageArtists) {
         Stream<List<LastfmGetLibraryArtistsResponse.Artist>> stream = new ChunkIterator<>(fetchedPageArtists.iterator(), THREAD_COUNT).stream();
 
-        stream.flatMap(this::artistInfoStream)
+        //AtomicInteger counter = new AtomicInteger(0);
+        Spliterator<LastfmArtist> spliterator = stream.flatMap(this::artistInfoStream)
                 .filter(Objects::nonNull)
                 .map(LastfmMapper::fromArtistInfoToEntity)
-                .forEach(artist -> {
-                    musicRepositoryService.saveArtistInfoIfNotExist(artist);
-                    log.debug("ARTIST: {}, PLAYCOUNT: {}",
-                            artist.getName(),
-                            artist.getStats().getPlaycount());
-                });
-    }
+                //.collect(Collectors.groupingBy(artist -> counter.getAndIncrement()/MAX_CONNECTION_POOL_SIZE))
+                .spliterator();
 
-    @Async
-    protected CompletableFuture<LastfmGetLibraryArtistsResponse> getLibraryArtistAsync(String username, String page) {
-        return CompletableFuture.completedFuture(
-                lastFmArtistApiAdapter.getLibraryArtists(username, page).getBody()
-        );
-    }
-
-    private Stream<LastfmGetLibraryArtistsResponse.Artist> artistStream(
-            CompletableFuture<LastfmGetLibraryArtistsResponse> fetchedPageData) {
-        try {
-            return fetchedPageData.get().getArtists().getArtist().stream();
-        } catch (InterruptedException | ExecutionException ex) {
-            throw new RuntimeException(ex);
+        while (true) {
+            List<LastfmArtist> chunk = new ArrayList<>(MAX_CONNECTION_POOL_SIZE);
+            for (int i = 0; i < MAX_CONNECTION_POOL_SIZE ; i++) {
+                if (!spliterator.tryAdvance(chunk::add)) {
+                    break;
+                }
+            }
+            if (chunk.isEmpty()) {
+                break;
+            }
+            List<CompletableFuture<Boolean>> threads = new ArrayList<>();
+            // Mongo is ACID compliant, so there should not be any issue with this
+            chunk.forEach(lastfmArtist -> threads.add(asyncTaskExecutor.submitCompletable(() -> musicRepositoryService.saveArtistInfoIfNotExist(lastfmArtist))));
+            CompletableFuture.allOf(threads.toArray(new CompletableFuture[0])).join();
         }
     }
 
-    @Async
-    protected CompletableFuture<LastfmArtistInfoResponse> getArtistInfoAsync(String name, String mbid) {
-        var artistInfoRes = CompletableFuture.completedFuture(lastFmArtistApiAdapter.getArtistInfo(name, mbid).getBody());
-        try {
-            if (artistInfoRes.get().getArtist() == null) {
-                return CompletableFuture.completedFuture(lastFmArtistApiAdapter.getArtistInfo(name, null).getBody());
-            }
-        } catch (Exception e) {
-            return CompletableFuture.completedFuture(null);
+    protected LastfmArtistInfoResponse getArtistInfo(String name, String mbid) {
+        var artistInfoRes = lastFmArtistApiAdapter.getArtistInfo(name, mbid).get().getBody();
+        if (artistInfoRes == null || artistInfoRes.getArtist() == null) {
+            return lastFmArtistApiAdapter.getArtistInfo(name, null).get().getBody();
         }
         return artistInfoRes;
     }
@@ -134,11 +137,14 @@ public class LastFmArtistApiService {
     private Stream<LastfmArtistInfoResponse> artistInfoStream(List<LastfmGetLibraryArtistsResponse. Artist> artists)  {
         List<CompletableFuture<LastfmArtistInfoResponse>> threads = new ArrayList<>();
         log.debug("SIZE: {}", artists.size());
-        for (int thread = 0; thread < THREAD_COUNT && thread < artists.size(); thread++) {
-            threads.add(getArtistInfoAsync(artists.get(thread).getName(),
-                    artists.get(thread).getMbid().isBlank() ? null : artists.get(thread).getMbid()));
-        }
+        int limit = Math.min(artists.size(), THREAD_COUNT);
+
+        IntStream.range(0, limit).forEach(thread -> threads.add(asyncTaskExecutor.submitCompletable(() ->
+                getArtistInfo(artists.get(thread).getName(), artists.get(thread).getMbid().isBlank()
+                        ? null : artists.get(thread).getMbid()))));
+
         CompletableFuture.allOf(threads.toArray(new CompletableFuture[0])).join();
+
         return threads.stream().flatMap(fetchedArtist -> {
             try {
                 return Stream.ofNullable(fetchedArtist.get());
@@ -148,14 +154,11 @@ public class LastFmArtistApiService {
         });
     }
 
-
-    private Stream<List<LastfmGetLibraryArtistsResponse.Artist>> getStreamAsChunks(
-            Stream<LastfmGetLibraryArtistsResponse.Artist> artists, int size) {
-        // https://stackoverflow.com/questions/27583623/is-there-an-elegant-way-to-process-a-stream-in-chunks
-        var listIterator = new ChunkIterator<>(artists.iterator(), size);
-        return StreamSupport.stream(
-                Spliterators.spliteratorUnknownSize(listIterator, Spliterator.ORDERED),
-                false
-        );
+    private Stream<LastfmGetLibraryArtistsResponse.Artist> artistStream(CompletableFuture<LastfmGetLibraryArtistsResponse> fetchedPageData) {
+        try {
+            return fetchedPageData.get().getArtists().getArtist().stream();
+        } catch (InterruptedException | ExecutionException ex) {
+            throw new RuntimeException(ex);
+        }
     }
 }

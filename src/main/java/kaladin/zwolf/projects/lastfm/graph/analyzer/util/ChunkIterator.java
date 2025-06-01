@@ -28,7 +28,6 @@ public class ChunkIterator<T> implements Iterator<List<T>> {
     }
 
     public Stream<List<T>> stream() {
-        return StreamSupport.stream(Spliterators
-                .spliteratorUnknownSize(this, Spliterator.ORDERED), false);
+        return StreamSupport.stream(Spliterators.spliteratorUnknownSize(this, Spliterator.ORDERED), false);
     }
 }

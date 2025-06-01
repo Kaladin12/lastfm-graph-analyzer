@@ -33,7 +33,7 @@ public class MusicRepositoryService {
     return musicRepository.findLastfmArtistByName(name);
   }
 
-  public void saveArtistInfoIfNotExist(LastfmArtist artistInfo) {
+  public boolean saveArtistInfoIfNotExist(LastfmArtist artistInfo) {
     String mbid = artistInfo.getMbid();
     String name = artistInfo.getName();
     artistInfo.setMbid(MappingUtils.getMbid(mbid, name));
@@ -44,9 +44,10 @@ public class MusicRepositoryService {
       setTags(artistInfo);
       musicRepository.save(artistInfo);
       log.debug("ARTIST {} SAVED", mbid);
-      return;
+      return true;
     }
     log.warn("ARTIST {} ALREADY EXISTED IN DB", mbid);
+    return false;
   }
 
   public void saveArtistInfo(LastfmArtist artistInfo) {

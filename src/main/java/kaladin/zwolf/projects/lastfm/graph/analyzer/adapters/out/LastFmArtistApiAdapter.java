@@ -13,6 +13,7 @@ import org.springframework.web.util.UriBuilder;
 
 import java.nio.charset.StandardCharsets;
 import java.security.NoSuchAlgorithmException;
+import java.util.Optional;
 
 @Component
 public class LastFmArtistApiAdapter extends LastFmApiAdapter {
@@ -44,19 +45,18 @@ public class LastFmArtistApiAdapter extends LastFmApiAdapter {
                 .retrieve().toEntity(LastfmSessionTokenResponse.class);
     }
 
-    public ResponseEntity<LastfmArtistInfoResponse> getArtistInfo(String name, String mbid) {
-        return lastfmRestClient.post()
-                .uri(uriBuilder -> {
+    public Optional<ResponseEntity<LastfmArtistInfoResponse>> getArtistInfo(String name, String mbid) {
+        return Optional.of(lastfmRestClient.post().uri(uriBuilder -> {
                     uriBuilder = uriBuilder
                             .queryParam("method", "artist.getInfo")
                             .queryParam("api_key", lastfmApiKey)
                             .queryParam("format", "json");
                     if (mbid != null) {
-                       return uriBuilder.queryParam("mbid", mbid).build();
+                        return uriBuilder.queryParam("mbid", mbid).build();
                     }
                     return uriBuilder.queryParam("artist", name).build();
                 })
-                .retrieve().toEntity(LastfmArtistInfoResponse.class);
+                .retrieve().toEntity(LastfmArtistInfoResponse.class));
     }
 
     public ResponseEntity<LastfmGetLibraryArtistsResponse> getLibraryArtists(String username, String page) {
