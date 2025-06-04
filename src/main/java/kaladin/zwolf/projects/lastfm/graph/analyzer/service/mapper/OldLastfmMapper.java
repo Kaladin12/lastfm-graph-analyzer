@@ -9,9 +9,9 @@ import kaladin.zwolf.projects.lastfm.graph.analyzer.domain.response.LastfmTrackI
 import java.util.Optional;
 import java.util.UUID;
 
-public class LastfmMapper {
+public class OldLastfmMapper {
 
-    private LastfmMapper() {}
+    private OldLastfmMapper() {}
 
     public static LastfmArtist fromArtistInfoToEntity(LastfmArtistInfoResponse artistInfo) {
         return LastfmArtist.builder()

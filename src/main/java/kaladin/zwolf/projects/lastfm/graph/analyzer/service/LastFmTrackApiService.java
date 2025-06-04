@@ -7,7 +7,7 @@ import kaladin.zwolf.projects.lastfm.graph.analyzer.domain.entity.mongo.LastfmTr
 import kaladin.zwolf.projects.lastfm.graph.analyzer.domain.response.LastfmTopTracksResponse;
 import kaladin.zwolf.projects.lastfm.graph.analyzer.domain.response.LastfmTrackInfoResponse;
 import kaladin.zwolf.projects.lastfm.graph.analyzer.domain.response.enums.Period;
-import kaladin.zwolf.projects.lastfm.graph.analyzer.service.mapper.LastfmMapper;
+import kaladin.zwolf.projects.lastfm.graph.analyzer.service.mapper.OldLastfmMapper;
 import kaladin.zwolf.projects.lastfm.graph.analyzer.util.ChunkIterator;
 import kaladin.zwolf.projects.lastfm.graph.analyzer.util.MappingUtils;
 import org.slf4j.Logger;
@@ -141,7 +141,7 @@ public class LastFmTrackApiService {
                 log.error("DROPPING {}", track.getName());
                 return;
             }
-            LastfmTrack mappedTrack = LastfmMapper.fromTrackInfoToEntity(infoResponse, track);
+            LastfmTrack mappedTrack = OldLastfmMapper.fromTrackInfoToEntity(infoResponse, track);
             // Yay! O(1)
             if (originalArtist.getTracks().containsKey(mappedTrack.getMbid())) {
                 log.error("DROPPING {}", track.getName());

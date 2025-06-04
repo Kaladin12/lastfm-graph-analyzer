@@ -43,19 +43,19 @@ public class LastfmAdapter {
         lastFmArtistApiService.getArtistInfo(id).ifPresent(artist -> log.info("RETRIEVED ARTIST: {}", artist));
     }
 
-    @GetMapping("/track/top/{username}")
+    @GetMapping("/{username}/tracks/top")
     public String getTrackTop(@PathVariable String username, @RequestParam("period") String period) {
         lastFmTrackApiService.getTopTracks(username, period);
         return "Your request is being processed :)";
     }
 
-    @GetMapping("/library/{username}")
+    @GetMapping("/{username}/library")
     public ResponseEntity<String> getLibrary(@PathVariable String username) {
         lastFmArtistApiService.getLibraryArtists(username);
         return ResponseEntity.accepted().body("Your request is being processed :)");
     }
 
-    @GetMapping("/library/{username}/artists/{id}")
+    @GetMapping("/{username}/library/artists/{id}")
     public void getLibraryArtist(@PathVariable String username, @PathVariable String id) {
         
     }

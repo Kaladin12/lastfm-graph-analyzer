@@ -1,11 +1,12 @@
 package kaladin.zwolf.projects.lastfm.graph.analyzer.service;
 
+import kaladin.zwolf.projects.lastfm.graph.analyzer.service.mapper.LastFmMapper;
 import kaladin.zwolf.projects.lastfm.graph.analyzer.util.ChunkIterator;
 import kaladin.zwolf.projects.lastfm.graph.analyzer.adapters.out.LastFmArtistApiAdapter;
 import kaladin.zwolf.projects.lastfm.graph.analyzer.domain.entity.mongo.LastfmArtist;
 import kaladin.zwolf.projects.lastfm.graph.analyzer.domain.response.LastfmArtistInfoResponse;
 import kaladin.zwolf.projects.lastfm.graph.analyzer.domain.response.LastfmGetLibraryArtistsResponse;
-import kaladin.zwolf.projects.lastfm.graph.analyzer.service.mapper.LastfmMapper;
+import kaladin.zwolf.projects.lastfm.graph.analyzer.service.mapper.OldLastfmMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,10 +21,8 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
 
 @Service
 public class LastFmArtistApiService {
@@ -61,7 +60,7 @@ public class LastFmArtistApiService {
     public Optional<LastfmArtist> getArtistInfo(String name) {
         return lastFmArtistApiAdapter.getArtistInfo(name, null)
                 .filter(responseEntity -> Objects.nonNull(responseEntity.getBody()))
-                .map(responseEntity -> LastfmMapper.fromArtistInfoToEntity(responseEntity.getBody()))
+                .map(responseEntity -> LastFmMapper.INSTANCE.fromArtistInfoToEntity(responseEntity.getBody()))
                 .map(lastfmArtist -> {
                     musicRepositoryService.saveArtistInfoIfNotExist(lastfmArtist);
                     return lastfmArtist;
@@ -105,7 +104,7 @@ public class LastFmArtistApiService {
         //AtomicInteger counter = new AtomicInteger(0);
         Spliterator<LastfmArtist> spliterator = stream.flatMap(this::artistInfoStream)
                 .filter(Objects::nonNull)
-                .map(LastfmMapper::fromArtistInfoToEntity)
+                .map(LastFmMapper.INSTANCE::fromArtistInfoToEntity)
                 //.collect(Collectors.groupingBy(artist -> counter.getAndIncrement()/MAX_CONNECTION_POOL_SIZE))
                 .spliterator();
 
